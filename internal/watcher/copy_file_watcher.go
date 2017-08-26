@@ -20,7 +20,7 @@ type CopyFileWatcher struct {
 	// before a signaling an event for the file. Defaults to 5seconds.
 	StableThreshold time.Duration
 
-	// Events signal when a file has stabliized.
+	// Events signal when a file has stabilized.
 	Events chan FileEvent
 }
 
@@ -76,9 +76,9 @@ func (w *CopyFileWatcher) watchExistingFiles(files []os.FileInfo) {
 }
 
 func (w *CopyFileWatcher) watchForNewFiles() {
-	for file := range w.dirWatcher.Events {
-		if file.Op&fsnotify.Create == fsnotify.Create {
-			go w.waitUntilFileIsStable(file.Name)
+	for fileEvent := range w.dirWatcher.Events {
+		if fileEvent.Op&fsnotify.Create == fsnotify.Create {
+			go w.waitUntilFileIsStable(fileEvent.Name)
 		}
 	}
 
@@ -95,19 +95,26 @@ func (w *CopyFileWatcher) waitUntilFileIsStable(path string) {
 	if err != nil {
 		log.Println(errors.Wrapf(err, "unable to create watcher, skipping %s", path))
 	}
+	defer fw.Close()
 	err = fw.Add(path)
 	if err != nil {
 		log.Println(errors.Wrapf(err, "unable to watch %s, skipping", path))
 	}
 
 	timer := time.NewTimer(w.StableThreshold)
+	defer timer.Stop()
 
-	select {
-	case <-fw.Events:
-		// Start the wait over again, the file was changed
-		timer.Reset(w.StableThreshold)
-	case <-timer.C:
-		timer.Stop()
-		w.Events <- FileEvent{Path: path}
+	for {
+		select {
+		case <-fw.Events:
+			// Start the wait over again, the file was changed
+			if !timer.Stop() {
+				<-timer.C
+			}
+			timer.Reset(w.StableThreshold)
+		case <-timer.C:
+			w.Events <- FileEvent{Path: path}
+			return
+		}
 	}
 }

@@ -60,6 +60,10 @@ func TestCopyFileWatcher(t *testing.T) {
 
 	// Write to it a few times
 	for i := 0; i < 10; i++ {
+		if gotEvents.value() > 0 {
+			t.Fatalf("expected no events to be raised until the StableThreshold has been reached but got %d events", gotEvents)
+		}
+
 		f, err = os.OpenFile(tmpfile, os.O_WRONLY, 0666)
 		if err != nil {
 			t.Fatalf("%#v", err)
@@ -81,6 +85,9 @@ func TestCopyFileWatcher(t *testing.T) {
 
 		time.Sleep(50 * time.Millisecond)
 	}
+
+	// Give the file time to be considered stable
+	time.Sleep(w.StableThreshold)
 
 	// Stop listening for events
 	err = w.Close()
