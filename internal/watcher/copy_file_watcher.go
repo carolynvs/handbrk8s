@@ -6,6 +6,8 @@ import (
 	"os"
 	"time"
 
+	"path/filepath"
+
 	"github.com/fsnotify/fsnotify"
 	"github.com/pkg/errors"
 )
@@ -71,7 +73,8 @@ func (w *CopyFileWatcher) Close() error {
 
 func (w *CopyFileWatcher) watchExistingFiles(files []os.FileInfo) {
 	for _, file := range files {
-		go w.waitUntilFileIsStable(file.Name())
+		path := filepath.Join(w.watchDir, file.Name())
+		go w.waitUntilFileIsStable(path)
 	}
 }
 
