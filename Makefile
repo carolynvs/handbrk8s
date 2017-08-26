@@ -21,7 +21,7 @@ pkg:
 	cd ./cmd/watcher; CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build
 	cd ./cmd/watcher; docker build -t carolynvs/handbrk8s-watcher .
 
-watch: build
-	./watcher
+watch: pkg
+	docker run --rm -it -v `pwd`/tmp:/tmp carolynvs/handbrk8s-watcher
 
 PHONY: build test validate

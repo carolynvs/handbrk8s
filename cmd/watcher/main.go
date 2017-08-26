@@ -50,4 +50,5 @@ func handleFile(path string) {
 	if err != nil {
 		log.Println(err)
 	}
+	log.Println("it's been handled")
 }
