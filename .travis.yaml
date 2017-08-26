@@ -1,0 +1,6 @@
+language: go
+go_import_path: github.com/carolynvs/handbrk8s
+go:
+  - 1.9
+install: true # dep+vendor=win
+script: make test
