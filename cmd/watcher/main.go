@@ -11,8 +11,6 @@ import (
 
 var watchDir = "/mlp/movies/raw"
 
-// wait until done copying: https://stackoverflow.com/a/13434687
-
 func main() {
 	done := make(chan bool)
 

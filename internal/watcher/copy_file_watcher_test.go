@@ -59,7 +59,7 @@ func TestCopyFileWatcher(t *testing.T) {
 	time.Sleep(50 * time.Millisecond)
 
 	// Write to it a few times
-	for i := 0; i < 2; i++ {
+	for i := 0; i < 10; i++ {
 		f, err = os.OpenFile(tmpfile, os.O_WRONLY, 0666)
 		if err != nil {
 			t.Fatalf("%#v", err)
@@ -92,7 +92,7 @@ func TestCopyFileWatcher(t *testing.T) {
 	fmt.Println("Wait for all events to be processed")
 	<-done
 
-	var wantEvents int32 = 3
+	var wantEvents int32 = 1
 	if gotEvents.value() != wantEvents {
 		t.Fatalf("expected %d events, got %d", wantEvents, gotEvents)
 	}
