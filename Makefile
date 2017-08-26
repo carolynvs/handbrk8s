@@ -1,5 +1,5 @@
-BIN_DIR := $(GOPATH)/bin
-DEP := $(BINDIR)/dep
+GOBIN := $(GOPATH)/bin
+DEP := $(GOBIN)/dep
 
 default: build test
 
@@ -16,6 +16,10 @@ validate: $(DEP)
 	go fmt ./...
 	go vet ./...
 	dep status | grep -v "mismatch"
+
+pkg:
+	cd ./cmd/watcher; CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build
+	cd ./cmd/watcher; docker build -t carolynvs/handbrk8s-watcher .
 
 watch: build
 	./watcher
