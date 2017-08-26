@@ -97,11 +97,13 @@ func (w *CopyFileWatcher) waitUntilFileIsStable(path string) {
 	fw, err := fsnotify.NewWatcher()
 	if err != nil {
 		log.Println(errors.Wrapf(err, "unable to create watcher, skipping %s", path))
+		return
 	}
 	defer fw.Close()
 	err = fw.Add(path)
 	if err != nil {
 		log.Println(errors.Wrapf(err, "unable to watch %s, skipping", path))
+		return
 	}
 
 	timer := time.NewTimer(w.StableThreshold)
@@ -116,7 +118,13 @@ func (w *CopyFileWatcher) waitUntilFileIsStable(path string) {
 			}
 			timer.Reset(w.StableThreshold)
 		case <-timer.C:
-			w.Events <- FileEvent{Path: path}
+			// Make sure the file is still present
+			_, err := os.Stat(path)
+			if err != nil {
+				log.Println(errors.Wrapf(err, "unable to stat %s, skipping", path))
+			} else {
+				w.Events <- FileEvent{Path: path}
+			}
 			return
 		}
 	}
