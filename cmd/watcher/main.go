@@ -9,10 +9,10 @@ import (
 	"github.com/pkg/errors"
 )
 
-var watchDir = "/mlp/movies/raw"
+var watchDir = "/tmp"
 
 func main() {
-	done := make(chan bool)
+	done := make(chan struct{})
 
 	// watch directory
 	watcher, err := watcher.NewCopyFileWatcher(watchDir)
@@ -25,12 +25,24 @@ func main() {
 	signals := make(chan os.Signal, 1)
 	signal.Notify(signals, os.Interrupt)
 	go waitForTheKill(signals, done)
-	<-done
+
+	for {
+		select {
+		case <-done:
+			return
+		case file := <-watcher.Events:
+			go handleFile(file.Path)
+		}
+	}
 }
 
-func waitForTheKill(signals <-chan os.Signal, done chan<- bool) {
+func waitForTheKill(signals <-chan os.Signal, done chan struct{}) {
 	for range signals {
 		log.Println("okay, everyone out of the pool!")
-		done <- true
+		close(done)
 	}
+}
+
+func handleFile(path string) {
+	log.Println("handling ", path)
 }

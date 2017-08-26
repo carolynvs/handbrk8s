@@ -10,4 +10,7 @@ validate:
 	go fmt ./...
 	go vet ./...
 
+watch: build
+	./watcher
+
 PHONY: build test validate

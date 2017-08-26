@@ -17,6 +17,7 @@ import (
 type CopyFileWatcher struct {
 	watchDir   string
 	dirWatcher *fsnotify.Watcher
+	done       chan struct{}
 
 	// StableThreshold is the duration that a file must not change
 	// before a signaling an event for the file. Defaults to 5seconds.
@@ -55,6 +56,7 @@ func NewCopyFileWatcher(watchDir string) (*CopyFileWatcher, error) {
 	w := &CopyFileWatcher{
 		watchDir:        watchDir,
 		dirWatcher:      dw,
+		done:            make(chan struct{}),
 		StableThreshold: 5 * time.Second,
 		Events:          make(chan FileEvent),
 	}
@@ -67,8 +69,9 @@ func NewCopyFileWatcher(watchDir string) (*CopyFileWatcher, error) {
 
 // Close all channels.
 func (w *CopyFileWatcher) Close() error {
-	err := w.dirWatcher.Close()
-	return errors.WithStack(err)
+	w.dirWatcher.Close()
+	close(w.done)
+	return nil
 }
 
 func (w *CopyFileWatcher) watchExistingFiles(files []os.FileInfo) {
@@ -79,21 +82,22 @@ func (w *CopyFileWatcher) watchExistingFiles(files []os.FileInfo) {
 }
 
 func (w *CopyFileWatcher) watchForNewFiles() {
-	for fileEvent := range w.dirWatcher.Events {
-		if fileEvent.Op&fsnotify.Create == fsnotify.Create {
-			go w.waitUntilFileIsStable(fileEvent.Name)
+	for {
+		select {
+		case <-w.done:
+			close(w.Events)
+			return
+		case fileEvent := <-w.dirWatcher.Events:
+			if fileEvent.Op&fsnotify.Create == fsnotify.Create {
+				go w.waitUntilFileIsStable(fileEvent.Name)
+			}
 		}
 	}
-
-	// Tie closing our events to the underlying watcher
-	close(w.Events)
 }
 
 // waitUntilFileIsStable waits until the file doesn't change for a set amount of
 // time. This prevents acting on a file that is still copying, being written.
 func (w *CopyFileWatcher) waitUntilFileIsStable(path string) {
-	// todo: this entire thing is leaky, need a done channel or context
-
 	fw, err := fsnotify.NewWatcher()
 	if err != nil {
 		log.Println(errors.Wrapf(err, "unable to create watcher, skipping %s", path))
@@ -111,6 +115,8 @@ func (w *CopyFileWatcher) waitUntilFileIsStable(path string) {
 
 	for {
 		select {
+		case <-w.done:
+			return
 		case <-fw.Events:
 			// Start the wait over again, the file was changed
 			if !timer.Stop() {
