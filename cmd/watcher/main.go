@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/signal"
 
+	"github.com/carolynvs/handbrk8s/internal/k8s"
 	"github.com/carolynvs/handbrk8s/internal/watchers"
 	"github.com/pkg/errors"
 )
@@ -45,4 +46,8 @@ func waitForTheKill(signals <-chan os.Signal, done chan struct{}) {
 
 func handleFile(path string) {
 	log.Println("handling ", path)
+	err := k8s.CreateJob(path)
+	if err != nil {
+		log.Println(err)
+	}
 }
