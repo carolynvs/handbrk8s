@@ -5,7 +5,7 @@ import (
 	"os"
 	"os/signal"
 
-	"github.com/carolynvs/handbrk8s/internal/watcher"
+	"github.com/carolynvs/handbrk8s/internal/watchers"
 	"github.com/pkg/errors"
 )
 
@@ -15,7 +15,7 @@ func main() {
 	done := make(chan struct{})
 
 	// watch directory
-	watcher, err := watcher.NewCopyFileWatcher(watchDir)
+	watcher, err := watchers.NewStableFile(watchDir)
 	if err != nil {
 		log.Fatal(errors.Wrapf(err, "Unable to watch %s", watchDir))
 	}

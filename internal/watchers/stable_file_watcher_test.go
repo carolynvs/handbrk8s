@@ -1,4 +1,4 @@
-package watcher
+package watchers
 
 import (
 	"fmt"
@@ -23,7 +23,11 @@ func (c *counter) value() int32 {
 	return atomic.LoadInt32(&c.val)
 }
 
+var testStableThreshold = 1 * time.Second
+
 func TestCopyFileWatcher_NewFile(t *testing.T) {
+	t.Parallel()
+
 	tmpDir, err := ioutil.TempDir("", t.Name())
 	if err != nil {
 		t.Fatalf("%#v", err)
@@ -31,7 +35,8 @@ func TestCopyFileWatcher_NewFile(t *testing.T) {
 	defer os.RemoveAll(tmpDir)
 	fmt.Println("Watching ", tmpDir)
 
-	w, err := NewCopyFileWatcher(tmpDir)
+	w, err := NewStableFile(tmpDir)
+	w.StableThreshold = testStableThreshold
 
 	// Track how many times an event is raised
 	var gotEvents counter
@@ -106,6 +111,8 @@ func TestCopyFileWatcher_NewFile(t *testing.T) {
 }
 
 func TestCopyFileWatcher_ExistingFile(t *testing.T) {
+	t.Parallel()
+
 	tmpDir, err := ioutil.TempDir("", t.Name())
 	if err != nil {
 		t.Fatalf("%#v", err)
@@ -124,7 +131,8 @@ func TestCopyFileWatcher_ExistingFile(t *testing.T) {
 		t.Fatalf("%#v", err)
 	}
 
-	w, err := NewCopyFileWatcher(tmpDir)
+	w, err := NewStableFile(tmpDir)
+	w.StableThreshold = testStableThreshold
 
 	// Track how many times an event is raised
 	var gotEvents counter
@@ -159,6 +167,8 @@ func TestCopyFileWatcher_ExistingFile(t *testing.T) {
 }
 
 func TestCopyFileWatcher_DeletedFile(t *testing.T) {
+	t.Parallel()
+
 	tmpDir, err := ioutil.TempDir("", t.Name())
 	if err != nil {
 		t.Fatalf("%#v", err)
@@ -166,7 +176,8 @@ func TestCopyFileWatcher_DeletedFile(t *testing.T) {
 	defer os.RemoveAll(tmpDir)
 	fmt.Println("Watching ", tmpDir)
 
-	w, err := NewCopyFileWatcher(tmpDir)
+	w, err := NewStableFile(tmpDir)
+	w.StableThreshold = testStableThreshold
 
 	// Track how many times an event is raised
 	var gotEvents counter

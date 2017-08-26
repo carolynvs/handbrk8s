@@ -1,4 +1,4 @@
-package watcher
+package watchers
 
 import (
 	"io/ioutil"
@@ -12,15 +12,15 @@ import (
 	"github.com/pkg/errors"
 )
 
-// NewFileWatcher watches for new files, waiting for the file to stop changing
-// for a period of time before signaling an event.
-type CopyFileWatcher struct {
+// StableFile watches for new files, waiting for the file to be completely
+// written before signaling an event.
+type StableFile struct {
 	watchDir   string
 	dirWatcher *fsnotify.Watcher
 	done       chan struct{}
 
 	// StableThreshold is the duration that a file must not change
-	// before a signaling an event for the file. Defaults to 5seconds.
+	// before a signaling an event for the file. Defaults to 5 seconds.
 	StableThreshold time.Duration
 
 	// Events signal when a file has stabilized.
@@ -34,8 +34,8 @@ type FileEvent struct {
 	Path string
 }
 
-// NewCopyFileWatcher prepares a new watcher for a directory.
-func NewCopyFileWatcher(watchDir string) (*CopyFileWatcher, error) {
+// NewStableFile watcher for a directory.
+func NewStableFile(watchDir string) (*StableFile, error) {
 	dw, err := fsnotify.NewWatcher()
 	if err != nil {
 		return nil, errors.Wrapf(err, "Unable to create a file system watcher")
@@ -53,7 +53,7 @@ func NewCopyFileWatcher(watchDir string) (*CopyFileWatcher, error) {
 		return nil, errors.Wrapf(err, "Unable to start watching %s", watchDir)
 	}
 
-	w := &CopyFileWatcher{
+	w := &StableFile{
 		watchDir:        watchDir,
 		dirWatcher:      dw,
 		done:            make(chan struct{}),
@@ -68,20 +68,20 @@ func NewCopyFileWatcher(watchDir string) (*CopyFileWatcher, error) {
 }
 
 // Close all channels.
-func (w *CopyFileWatcher) Close() error {
+func (w *StableFile) Close() error {
 	w.dirWatcher.Close()
 	close(w.done)
 	return nil
 }
 
-func (w *CopyFileWatcher) watchExistingFiles(files []os.FileInfo) {
+func (w *StableFile) watchExistingFiles(files []os.FileInfo) {
 	for _, file := range files {
 		path := filepath.Join(w.watchDir, file.Name())
 		go w.waitUntilFileIsStable(path)
 	}
 }
 
-func (w *CopyFileWatcher) watchForNewFiles() {
+func (w *StableFile) watchForNewFiles() {
 	for {
 		select {
 		case <-w.done:
@@ -97,7 +97,7 @@ func (w *CopyFileWatcher) watchForNewFiles() {
 
 // waitUntilFileIsStable waits until the file doesn't change for a set amount of
 // time. This prevents acting on a file that is still copying, being written.
-func (w *CopyFileWatcher) waitUntilFileIsStable(path string) {
+func (w *StableFile) waitUntilFileIsStable(path string) {
 	fw, err := fsnotify.NewWatcher()
 	if err != nil {
 		log.Println(errors.Wrapf(err, "unable to create watcher, skipping %s", path))
