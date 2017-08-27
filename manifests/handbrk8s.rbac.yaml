@@ -1,0 +1,33 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: watcher
+  namespace: handbrk8s
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRole
+metadata:
+  name: job-creator
+rules:
+- apiGroups:
+  - batch
+  resources:
+  - jobs
+  verbs:
+  - create
+  - get
+  - list
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRoleBinding
+metadata:
+  name: job-creators
+subjects:
+- kind: ServiceAccount
+  name: watcher
+  namespace: handbrk8s
+roleRef:
+  kind: ClusterRole
+  name: job-creator
+  apiGroup: rbac.authorization.k8s.io
+# workaround: kubectl create clusterrolebinding tmp-watcher-admin --clusterrole=cluster-admin --serviceaccount=handbrk8s:watcher

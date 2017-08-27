@@ -10,7 +10,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-var watchDir = "/tmp"
+var watchDir = "/watch"
 
 func main() {
 	done := make(chan struct{})

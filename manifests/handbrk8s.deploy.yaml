@@ -1,0 +1,26 @@
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: watcher
+  namespace: handbrk8s
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: watcher
+    spec:
+      serviceAccountName: watcher
+      containers:
+      - name: watcher
+        image: carolynvs/handbrk8s-watcher:latest
+        imagePullPolicy: Always
+        volumeMounts:
+        - mountPath: /watch
+          name: mlp
+      nodeSelector:
+        samba: "yes"
+      volumes:
+      - name: mlp
+        hostPath:
+          path: /mlp/movies/raw

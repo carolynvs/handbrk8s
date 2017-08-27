@@ -21,10 +21,10 @@ func CreateJob(path string) error {
 		return errors.Wrapf(err, "unable to create a kubernetes client")
 	}
 
-	pods, err := clientset.CoreV1().Pods("").List(metav1.ListOptions{})
+	jobs, err := clientset.BatchV1Client.Jobs("handbrk8s").List(metav1.ListOptions{})
 	if err != nil {
-		return errors.Wrapf(err, "unable to list pods")
+		return errors.Wrapf(err, "unable to list jobs")
 	}
-	log.Printf("There are %d pods in the cluster\n", len(pods.Items))
+	log.Printf("There are %d jobs in the cluster\n", len(jobs.Items))
 	return nil
 }
