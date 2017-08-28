@@ -30,4 +30,3 @@ roleRef:
   kind: ClusterRole
   name: job-creator
   apiGroup: rbac.authorization.k8s.io
-# workaround: kubectl create clusterrolebinding tmp-watcher-admin --clusterrole=cluster-admin --serviceaccount=handbrk8s:watcher
