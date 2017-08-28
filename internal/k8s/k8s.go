@@ -4,57 +4,22 @@ import (
 	"log"
 	"path/filepath"
 	"regexp"
+	"text/template"
+
+	"bytes"
 
 	"github.com/pkg/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/serializer/json"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/pkg/api"
 	_ "k8s.io/client-go/pkg/api/install"
-	apiv1 "k8s.io/client-go/pkg/api/v1"
 	_ "k8s.io/client-go/pkg/apis/batch/install"
 	batchv1 "k8s.io/client-go/pkg/apis/batch/v1"
 	"k8s.io/client-go/rest"
 )
 
 const namespace = "handbrk8s"
-
-const jobYaml = `
-apiVersion: batch/v1
-kind: Job
-metadata:
-  name: transcode-{{.Name}}
-  namespace: handbrk8s
-spec:
-  template:
-    metadata:
-      name: handbrake-{{.Name}}
-    spec:
-      containers:
-      - name: handbrake
-        image: carolynvs/handbrakecli:latest
-        imagePullPolicy: Always
-        command: ["/usr/bin/HandBrakeCLI"]
-        args:
-        - "--preset-import-file"
-        - "/config/ghb/presets.json"
-        - "-i"
-        - "{{.InputPath}}"
-        - "-o"
-        - "{{.OutputPath}}"
-        - "--preset"
-        - "{{.Preset}}"
-        volumeMounts:
-        - mountPath: /watch
-          name: mlp
-      nodeSelector:
-        samba: "yes"
-      # Do not restart containers after they exit
-      restartPolicy: Never #OnFailure
-      volumes:
-      - name: mlp
-        hostPath:
-          path: /mlp/movies/raw
-`
 
 // GetCurrentClusterClient gets a client for the current cluster upon which
 // we are currently executing upon. Only works when running in a cluster.
@@ -72,104 +37,120 @@ func GetCurrentClusterClient() (*kubernetes.Clientset, error) {
 	return clientset, nil
 }
 
-// CreateTranscodeJob creates a job to transcode the specified video
-func CreateTranscodeJob(inputPath string, outputPath string) (jobName string, err error) {
-	// TODO: make a job from a yaml template and a map of replacement values
-	log.Println("creating a job for ", inputPath)
-
-	// make a friendly name
+// CreateTranscodeJob creates a job to transcode a video
+func CreateTranscodeJob(inputPath string, outputPath string, preset string) (jobName string, err error) {
 	filename := filepath.Base(inputPath)
-	jobName = sanitizeJobName(filename)
 
+	log.Println("creating transcode job for ", filename)
+	values := transcodeJobValues{
+		Name:       sanitizeJobName(filename),
+		InputPath:  inputPath,
+		OutputPath: outputPath,
+		Preset:     preset,
+	}
+	return CreateJobFromTemplate(transcodeJobYaml, values)
+}
+
+// CreateUploadJob creates a job to upload a video to Plex
+func CreateUploadJob(path string) (jobName string, err error) {
+	filename := filepath.Base(path)
+
+	log.Println("creating upload job for ", filename)
+	values := uploadJobValues{
+		Name: sanitizeJobName(filename),
+	}
+	return CreateJobFromTemplate(uploadJobYaml, values)
+}
+
+// CreateJobFromTemplate creates a job on the current cluster from a template
+// and set of replacement values.
+func CreateJobFromTemplate(yamlTemplate string, values interface{}) (jobName string, err error) {
 	clusterClient, err := GetCurrentClusterClient()
 	if err != nil {
-		return jobName, err
+		return "", err
 	}
-
 	jobclient := clusterClient.BatchV1Client.Jobs(namespace)
 
-	j := &batchv1.Job{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: namespace,
-			Name:      jobName,
-		},
-		Spec: batchv1.JobSpec{
-			Template: apiv1.PodTemplateSpec{
-				ObjectMeta: metav1.ObjectMeta{
-					Namespace: namespace,
-					Name:      "transcode-" + jobName,
-				},
-				Spec: apiv1.PodSpec{
-					Containers: []apiv1.Container{
-						{
-							Name:            "handbrake",
-							Image:           "carolynvs/handbrakecli:latest",
-							ImagePullPolicy: apiv1.PullAlways,
-							Command:         []string{"/usr/bin/HandBrakeCLI"},
-							Args: []string{
-								"--preset-import-file", "/config/ghb/presets.json",
-								"-i", inputPath,
-								"-o", outputPath,
-								"--preset", "tivo",
-							},
-							VolumeMounts: []apiv1.VolumeMount{
-								{
-									Name:      "mlp",
-									MountPath: "/watch",
-								},
-							},
-						},
-					},
-					NodeSelector: map[string]string{
-						"samba": "yes",
-					},
-					Volumes: []apiv1.Volume{ // TODO: The volume source needs to be configurable
-						{
-							Name: "mlp",
-							VolumeSource: apiv1.VolumeSource{
-								HostPath: &apiv1.HostPathVolumeSource{
-									Path: "/mlp/movies/raw",
-								},
-							},
-						},
-					},
-					RestartPolicy: apiv1.RestartPolicyOnFailure,
-				},
-			},
-		},
+	j, err := BuildJobFromTemplate(yamlTemplate, values)
+	if err != nil {
+		return "", err
 	}
 
 	result, err := jobclient.Create(j)
 	if err != nil {
-		return jobName, errors.Wrapf(err, "unable to create job: %s", jobName)
+		yaml, _ := SerializeObject(j)
+		return "", errors.Wrapf(err, "unable to create job from:\n%s", yaml)
 	}
 
 	log.Printf("created job: %s", result.Name)
-	return jobName, nil
+	return result.Name, nil
 }
 
-func CreateUploaderJob(path string) error {
-	log.Println("creating stub uploader job")
-
-	return nil
+// BuildJobFromTemplate builds a job definition from a template
+// and set of replacement values.
+func BuildJobFromTemplate(yamlTemplate string, values interface{}) (*batchv1.Job, error) {
+	yaml, err := ProcessTemplate(yamlTemplate, values)
+	if err != nil {
+		return nil, err
+	}
+	return DeserializeJob(yaml)
 }
 
+// ProcessTemplate substitutes the supplied values into a template.
+func ProcessTemplate(yamlTemplate string, values interface{}) (yaml []byte, err error) {
+	t, err := template.New("").Parse(yamlTemplate)
+	if err != nil {
+		return nil, errors.Wrapf(err, "unable to parse the yaml template\n%s", yamlTemplate)
+	}
+
+	var buf bytes.Buffer
+	err = t.Execute(&buf, values)
+	if err != nil {
+		return nil, errors.Wrapf(err, "unable to execute the yaml template with the values:\n%#v", values)
+	}
+
+	return buf.Bytes(), nil
+}
+
+// DeserializeJob reads a job definition from yaml.
 func DeserializeJob(yaml []byte) (*batchv1.Job, error) {
-	decode := api.Codecs.UniversalDeserializer().Decode
-
-	obj, _, err := decode(yaml, nil, nil)
+	obj, err := DeserializeObject(yaml)
 	if err != nil {
 		return nil, err
 	}
 
 	j, ok := obj.(*batchv1.Job)
 	if !ok {
-		return nil, errors.New("yaml didn't not deserialize into a batch/v1 job")
+		return nil, errors.Errorf("yaml does not deserialize into a batch/v1 job\n%s", string(yaml))
 	}
 
 	return j, err
 }
 
+// DeserializeObject reads a k8s object from yaml.
+func DeserializeObject(yaml []byte) (runtime.Object, error) {
+	serializer := api.Codecs.UniversalDeserializer()
+
+	obj, _, err := serializer.Decode(yaml, nil, nil)
+	if err != nil {
+		return nil, errors.Wrapf(err, "cannot decode the yaml into a k8s runtime object\n%s", string(yaml))
+	}
+	return obj, err
+}
+
+// SerializeObject returns the yaml representation of a k8s object.
+func SerializeObject(obj runtime.Object) (string, error) {
+	serializer := json.NewYAMLSerializer(json.DefaultMetaFactory, nil, nil)
+
+	var buf bytes.Buffer
+	err := serializer.Encode(obj, &buf)
+	if err != nil {
+		return "", errors.Wrapf(err, "unable to serialize object:\n%#v", obj)
+	}
+	return buf.String(), nil
+}
+
+// sanitizeJobName replaces characters that aren't allowed in a k8s name with dashes.
 func sanitizeJobName(name string) string {
 	re := regexp.MustCompile(`[^a-zA-Z0-9._-]`)
 	return re.ReplaceAllString(name, "-")
