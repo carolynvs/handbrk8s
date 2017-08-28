@@ -5,12 +5,17 @@ import (
 	"os"
 	"os/signal"
 
+	"path/filepath"
+	"strings"
+
 	"github.com/carolynvs/handbrk8s/internal/k8s"
 	"github.com/carolynvs/handbrk8s/internal/watchers"
 	"github.com/pkg/errors"
 )
 
-var watchDir = "/watch"
+var watchDir = "/watch/raw/"
+var claimDir = "/watch/raw/claimed/"
+var transcodedDir = "/watch/transcoded/"
 
 func main() {
 	done := make(chan struct{})
@@ -45,10 +50,29 @@ func waitForTheKill(signals <-chan os.Signal, done chan struct{}) {
 }
 
 func handleFile(path string) {
-	log.Println("handling ", path)
-	err := k8s.CreateJob(path)
+	// Ignore hidden files
+	filename := filepath.Base(path)
+	if strings.HasPrefix(".", filename) {
+		return
+	}
+
+	// Claim the file, prevents attempts to process it a second time
+	claimPath := filepath.Join(claimDir, filename)
+	log.Println("attempting to claim ", claimPath)
+	err := os.Rename(path, claimPath)
+	if err != nil {
+		log.Println(errors.Wrapf(err, "unable to move %s to %s, skipping for now", path, claimPath))
+		return
+	}
+
+	transcodedPath := filepath.Join(transcodedDir, filename)
+	err = k8s.CreateTranscodeJob(claimPath, transcodedPath)
 	if err != nil {
 		log.Println(err)
 	}
-	log.Println("it's been handled")
+
+	err = k8s.CreateUploaderJob(transcodedPath)
+	if err != nil {
+		log.Println(err)
+	}
 }

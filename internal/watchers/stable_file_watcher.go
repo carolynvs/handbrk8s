@@ -98,6 +98,7 @@ func (w *StableFile) watchForNewFiles() {
 // waitUntilFileIsStable waits until the file doesn't change for a set amount of
 // time. This prevents acting on a file that is still copying, being written.
 func (w *StableFile) waitUntilFileIsStable(path string) {
+	// TODO: reuse the directory watcher and filter
 	fw, err := fsnotify.NewWatcher()
 	if err != nil {
 		log.Println(errors.Wrapf(err, "unable to create watcher, skipping %s", path))
