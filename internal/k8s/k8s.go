@@ -2,8 +2,6 @@ package k8s
 
 import (
 	"log"
-	"path/filepath"
-	"regexp"
 	"text/template"
 
 	"bytes"
@@ -18,8 +16,6 @@ import (
 	batchv1 "k8s.io/client-go/pkg/apis/batch/v1"
 	"k8s.io/client-go/rest"
 )
-
-const namespace = "handbrk8s"
 
 // GetCurrentClusterClient gets a client for the current cluster upon which
 // we are currently executing upon. Only works when running in a cluster.
@@ -37,44 +33,19 @@ func GetCurrentClusterClient() (*kubernetes.Clientset, error) {
 	return clientset, nil
 }
 
-// CreateTranscodeJob creates a job to transcode a video
-func CreateTranscodeJob(inputPath string, outputPath string, preset string) (jobName string, err error) {
-	filename := filepath.Base(inputPath)
-
-	log.Println("creating transcode job for ", filename)
-	values := transcodeJobValues{
-		Name:       sanitizeJobName(filename),
-		InputPath:  inputPath,
-		OutputPath: outputPath,
-		Preset:     preset,
-	}
-	return CreateJobFromTemplate(transcodeJobYaml, values)
-}
-
-// CreateUploadJob creates a job to upload a video to Plex
-func CreateUploadJob(path string) (jobName string, err error) {
-	filename := filepath.Base(path)
-
-	log.Println("creating upload job for ", filename)
-	values := uploadJobValues{
-		Name: sanitizeJobName(filename),
-	}
-	return CreateJobFromTemplate(uploadJobYaml, values)
-}
-
 // CreateJobFromTemplate creates a job on the current cluster from a template
 // and set of replacement values.
 func CreateJobFromTemplate(yamlTemplate string, values interface{}) (jobName string, err error) {
-	clusterClient, err := GetCurrentClusterClient()
-	if err != nil {
-		return "", err
-	}
-	jobclient := clusterClient.BatchV1Client.Jobs(namespace)
-
 	j, err := BuildJobFromTemplate(yamlTemplate, values)
 	if err != nil {
 		return "", err
 	}
+
+	clusterClient, err := GetCurrentClusterClient()
+	if err != nil {
+		return "", err
+	}
+	jobclient := clusterClient.BatchV1Client.Jobs(j.Namespace)
 
 	result, err := jobclient.Create(j)
 	if err != nil {
@@ -148,10 +119,4 @@ func SerializeObject(obj runtime.Object) (string, error) {
 		return "", errors.Wrapf(err, "unable to serialize object:\n%#v", obj)
 	}
 	return buf.String(), nil
-}
-
-// sanitizeJobName replaces characters that aren't allowed in a k8s name with dashes.
-func sanitizeJobName(name string) string {
-	re := regexp.MustCompile(`[^a-zA-Z0-9._-]`)
-	return re.ReplaceAllString(name, "-")
 }

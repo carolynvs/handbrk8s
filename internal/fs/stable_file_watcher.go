@@ -1,4 +1,4 @@
-package watchers
+package fs
 
 import (
 	"io/ioutil"
@@ -14,7 +14,7 @@ import (
 
 // StableFile watches for new files, waiting for the file to be completely
 // written before signaling an event.
-type StableFile struct {
+type StableFileWatcher struct {
 	watchDir   string
 	dirWatcher *fsnotify.Watcher
 	done       chan struct{}
@@ -34,54 +34,43 @@ type FileEvent struct {
 	Path string
 }
 
-// NewStableFile watcher for a directory.
-func NewStableFile(watchDir string) (*StableFile, error) {
+// NewStableFileWatcher watcher for a directory.
+func NewStableFileWatcher(watchDir string) (*StableFileWatcher, error) {
+	w := &StableFileWatcher{
+		watchDir:        watchDir,
+		done:            make(chan struct{}),
+		StableThreshold: 5 * time.Second,
+		Events:          make(chan FileEvent),
+	}
+
 	dw, err := fsnotify.NewWatcher()
 	if err != nil {
 		return nil, errors.Wrapf(err, "Unable to create a file system watcher")
 	}
 
 	// Note any preexisting files
-	existingFiles, err := ioutil.ReadDir(watchDir)
+	existingFiles, err := ioutil.ReadDir(w.watchDir)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Unable to list %s", watchDir)
+		return nil, errors.Wrapf(err, "Unable to list %s", w.watchDir)
 	}
 
 	// Start watching for new files
-	err = dw.Add(watchDir)
+	err = dw.Add(w.watchDir)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Unable to start watching %s", watchDir)
 	}
 
-	w := &StableFile{
-		watchDir:        watchDir,
-		dirWatcher:      dw,
-		done:            make(chan struct{}),
-		StableThreshold: 5 * time.Second,
-		Events:          make(chan FileEvent),
-	}
-
-	w.watchExistingFiles(existingFiles)
-	go w.watchForNewFiles()
+	go w.start(existingFiles)
 
 	return w, nil
 }
 
-// Close all channels.
-func (w *StableFile) Close() error {
-	w.dirWatcher.Close()
-	close(w.done)
-	return nil
-}
-
-func (w *StableFile) watchExistingFiles(files []os.FileInfo) {
-	for _, file := range files {
+func (w *StableFileWatcher) start(existingFiles []os.FileInfo) {
+	for _, file := range existingFiles {
 		path := filepath.Join(w.watchDir, file.Name())
 		go w.waitUntilFileIsStable(path)
 	}
-}
 
-func (w *StableFile) watchForNewFiles() {
 	for {
 		select {
 		case <-w.done:
@@ -95,9 +84,14 @@ func (w *StableFile) watchForNewFiles() {
 	}
 }
 
+// Close all channels.
+func (w *StableFileWatcher) Close() {
+	close(w.done)
+}
+
 // waitUntilFileIsStable waits until the file doesn't change for a set amount of
 // time. This prevents acting on a file that is still copying, being written.
-func (w *StableFile) waitUntilFileIsStable(path string) {
+func (w *StableFileWatcher) waitUntilFileIsStable(path string) {
 	// TODO: reuse the directory watcher and filter
 	fw, err := fsnotify.NewWatcher()
 	if err != nil {

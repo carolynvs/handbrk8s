@@ -1,4 +1,4 @@
-package watchers
+package fs
 
 import (
 	"fmt"
@@ -35,7 +35,7 @@ func TestCopyFileWatcher_NewFile(t *testing.T) {
 	defer os.RemoveAll(tmpDir)
 	fmt.Println("Watching ", tmpDir)
 
-	w, err := NewStableFile(tmpDir)
+	w, err := NewStableFileWatcher(tmpDir)
 	w.StableThreshold = testStableThreshold
 
 	// Track how many times an event is raised
@@ -131,7 +131,7 @@ func TestCopyFileWatcher_ExistingFile(t *testing.T) {
 		t.Fatalf("%#v", err)
 	}
 
-	w, err := NewStableFile(tmpDir)
+	w, err := NewStableFileWatcher(tmpDir)
 	w.StableThreshold = testStableThreshold
 
 	// Track how many times an event is raised
@@ -176,7 +176,7 @@ func TestCopyFileWatcher_DeletedFile(t *testing.T) {
 	defer os.RemoveAll(tmpDir)
 	fmt.Println("Watching ", tmpDir)
 
-	w, err := NewStableFile(tmpDir)
+	w, err := NewStableFileWatcher(tmpDir)
 	w.StableThreshold = testStableThreshold
 
 	// Track how many times an event is raised

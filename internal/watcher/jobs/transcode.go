@@ -1,4 +1,10 @@
-package k8s
+package jobs
+
+import (
+	"github.com/carolynvs/handbrk8s/internal/k8s"
+	"log"
+	"path/filepath"
+)
 
 const transcodeJobYaml = `
 apiVersion: batch/v1
@@ -43,10 +49,16 @@ type transcodeJobValues struct {
 	Name, InputPath, OutputPath, Preset string
 }
 
-const uploadJobYaml = `
+// CreateTranscodeJob creates a job to transcode a video
+func CreateTranscodeJob(inputPath string, outputPath string, preset string) (jobName string, err error) {
+	filename := filepath.Base(inputPath)
 
-`
-
-type uploadJobValues struct {
-	Name, Path string
+	log.Println("creating transcode job for ", filename)
+	values := transcodeJobValues{
+		Name:       sanitizeJobName(filename),
+		InputPath:  inputPath,
+		OutputPath: outputPath,
+		Preset:     preset,
+	}
+	return k8s.CreateJobFromTemplate(transcodeJobYaml, values)
 }
