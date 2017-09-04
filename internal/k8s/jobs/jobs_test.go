@@ -1,4 +1,4 @@
-package k8s
+package jobs
 
 import (
 	"testing"
@@ -19,7 +19,7 @@ spec:
       - name: containername
         image: containerimg
 `
-	j, err := DeserializeJob([]byte(yaml))
+	j, err := Deserialize([]byte(yaml))
 	if err != nil {
 		t.Fatalf("%#v", err)
 	}

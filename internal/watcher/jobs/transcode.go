@@ -1,9 +1,10 @@
 package jobs
 
 import (
-	"github.com/carolynvs/handbrk8s/internal/k8s"
 	"log"
 	"path/filepath"
+
+	"github.com/carolynvs/handbrk8s/internal/k8s/jobs"
 )
 
 const transcodeJobYaml = `
@@ -60,5 +61,5 @@ func CreateTranscodeJob(inputPath string, outputPath string, preset string) (job
 		OutputPath: outputPath,
 		Preset:     preset,
 	}
-	return k8s.CreateJobFromTemplate(transcodeJobYaml, values)
+	return jobs.CreateFromTemplate(transcodeJobYaml, values)
 }
