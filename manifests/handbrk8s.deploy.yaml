@@ -10,7 +10,6 @@ spec:
       labels:
         app: watcher
     spec:
-      serviceAccountName: watcher
       containers:
       - name: watcher
         image: carolynvs/handbrk8s-watcher:latest
