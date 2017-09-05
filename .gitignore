@@ -1,2 +1,4 @@
 /watcher
+/jobchain
 /cmd/watcher/watcher
+/cmd/jobchain/jobchain
