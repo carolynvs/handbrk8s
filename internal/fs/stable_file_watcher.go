@@ -47,6 +47,7 @@ func NewStableFileWatcher(watchDir string) (*StableFileWatcher, error) {
 	if err != nil {
 		return nil, errors.Wrapf(err, "Unable to create a file system watcher")
 	}
+	w.dirWatcher = dw
 
 	// Note any preexisting files
 	existingFiles, err := ioutil.ReadDir(w.watchDir)
@@ -55,7 +56,7 @@ func NewStableFileWatcher(watchDir string) (*StableFileWatcher, error) {
 	}
 
 	// Start watching for new files
-	err = dw.Add(w.watchDir)
+	err = w.dirWatcher.Add(w.watchDir)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Unable to start watching %s", watchDir)
 	}

@@ -14,6 +14,16 @@ spec:
       - name: watcher
         image: carolynvs/handbrk8s-watcher:latest
         imagePullPolicy: Always
+        args:
+        - "--plex-server"
+        - "192.168.0.103:32400"
+        - "--plex-library"
+        - "Movies"
+        - "--plex-share"
+        - "/plex/Movies"
+        env:
+        - name: PLEX_TOKEN
+          value: "Bpfj5wDaJGqcTBqDT8wJ"
         volumeMounts:
         - mountPath: /watch
           name: mlp

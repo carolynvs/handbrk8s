@@ -22,7 +22,6 @@ spec:
       - name: handbrake
         image: carolynvs/handbrakecli:latest
         imagePullPolicy: Always
-        command: ["/usr/bin/HandBrakeCLI"]
         args:
         - "--preset-import-file"
         - "/config/ghb/presets.json"
@@ -37,8 +36,7 @@ spec:
           name: mlp
       nodeSelector:
         samba: "yes"
-      # Do not restart containers after they exit
-      restartPolicy: Never #OnFailure
+      restartPolicy: OnFailure
       volumes:
       - name: mlp
         hostPath:

@@ -2,4 +2,4 @@ FROM scratch
 
 COPY watcher /
 
-CMD ["/watcher"]
+ENTRYPOINT ["/watcher"]

@@ -6,13 +6,8 @@ import (
 	"os"
 	"os/signal"
 
+	"github.com/carolynvs/handbrk8s/cmd"
 	"github.com/carolynvs/handbrk8s/internal/k8s/jobs"
-)
-
-const (
-	retCodeInvalidArguments int = iota
-	retCodeInterrupted
-	retCodeRuntimeError
 )
 
 func main() {
@@ -28,14 +23,14 @@ func main() {
 		select {
 		case <-signals:
 			fmt.Println("Stopping...")
-			os.Exit(retCodeInterrupted)
+			os.Exit(cmd.Interrupted)
 		case job, ok := <-jobChan:
 			if ok {
 				fmt.Printf("Job completed sucessfully at %s\n", job.Status.CompletionTime)
 				return
 			} else {
 				fmt.Println("Giving up...")
-				os.Exit(retCodeRuntimeError)
+				os.Exit(cmd.RuntimeError)
 			}
 		case err, ok := <-errChan:
 			if ok {
@@ -53,7 +48,7 @@ func parseFlags() (name, namespace string) {
 	if name == "" {
 		fmt.Println("Waits for a job to complete successfully")
 		fmt.Println("jobchain [-namespace] -name")
-		os.Exit(retCodeInvalidArguments)
+		os.Exit(cmd.InvalidArgument)
 	}
 
 	return name, namespace

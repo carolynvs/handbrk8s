@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/carolynvs/handbrk8s/internal/fs"
+	"github.com/carolynvs/handbrk8s/internal/plex"
 	"github.com/carolynvs/handbrk8s/internal/watcher/jobs"
 	"github.com/pkg/errors"
 )
@@ -25,16 +26,27 @@ type VideoWatcher struct {
 
 	// VideoPreset is the name of a HandBrake preset.
 	VideoPreset string
+
+	// DestLib contains connection information to the destination Plex library.
+	DestLib LibraryConfig
+}
+
+// LibraryConfig is the set of information necessary to upload videos to a Plex library.
+type LibraryConfig struct {
+	Config plex.Config
+	Name   string
+	Share  string
 }
 
 // NewVideoWatcher begins watching for new videos to transcode.
-func NewVideoWatcher(rootDir string, videoPreset string) *VideoWatcher {
+func NewVideoWatcher(rootDir string, videoPreset string, destLib LibraryConfig) *VideoWatcher {
 	w := &VideoWatcher{
 		done:          make(chan struct{}),
 		WatchDir:      filepath.Join(rootDir, "raw"),
 		ClaimDir:      filepath.Join(rootDir, "raw", "claimed"),
 		TranscodedDir: filepath.Join(rootDir, "transcoded"),
 		VideoPreset:   videoPreset,
+		DestLib:       destLib,
 	}
 	go w.start()
 	return w
@@ -73,7 +85,8 @@ func (w *VideoWatcher) handleVideo(path string) {
 	log.Println("attempting to claim ", claimPath)
 	err := os.Rename(path, claimPath)
 	if err != nil {
-		log.Println(errors.Wrapf(err, "unable to move %s to %s, skipping for now", path, claimPath))
+		log.Println(errors.Wrapf(err, "unable to move %s to %s, skipping for now",
+			path, claimPath))
 		return
 	}
 
@@ -83,7 +96,8 @@ func (w *VideoWatcher) handleVideo(path string) {
 		log.Println(err)
 	}
 
-	_, err = jobs.CreateUploadJob(tj, transcodedPath)
+	_, err = jobs.CreateUploadJob(tj, transcodedPath, claimPath, w.DestLib.Config,
+		w.DestLib.Name, w.DestLib.Share)
 	if err != nil {
 		log.Println(err)
 	}

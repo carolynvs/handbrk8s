@@ -8,17 +8,21 @@ $(DEP):
 
 watcher:
 	go build ./cmd/watcher
-	go test ./cmd/watcher
 	cd ./cmd/watcher; CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build
 	cd ./cmd/watcher; docker build -t carolynvs/handbrk8s-watcher .
 	docker push carolynvs/handbrk8s-watcher
 
 jobchain:
 	go build ./cmd/jobchain
-	go test ./cmd/jobchain
 	cd ./cmd/jobchain; CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build
 	cd ./cmd/jobchain; docker build -t carolynvs/jobchain .
 	docker push carolynvs/jobchain
+
+uploader:
+	go build ./cmd/uploader
+	cd ./cmd/uploader; CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build
+	cd ./cmd/uploader; docker build -t carolynvs/handbrk8s-uploader .
+	docker push carolynvs/handbrk8s-uploader
 
 test:
 	go test ./...
@@ -38,4 +42,4 @@ deploy:
 tail:
 	kubectl logs -f deploy/watcher
 
-.PHONY: watcher jobchain test validate deploy tail
+.PHONY: watcher uploader jobchain test validate deploy tail
