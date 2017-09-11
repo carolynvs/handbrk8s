@@ -5,17 +5,15 @@ import (
 	"testing"
 )
 
-func buildClient(t *testing.T) Client {
-	c := Client{
-		Token:     os.Getenv("PLEX_TOKEN"),
-		ServerURL: os.Getenv("PLEX_SERVER"),
-	}
+func buildClient(t *testing.T) (c Client) {
+	c.Token = os.Getenv("PLEX_TOKEN")
+	c.Server = os.Getenv("PLEX_SERVER")
 
 	if c.Token == "" {
 		t.Fatal("PLEX_TOKEN is not set")
 	}
 
-	if c.ServerURL == "" {
+	if c.Server == "" {
 		t.Fatal("PLEX_SERVER is not set")
 	}
 

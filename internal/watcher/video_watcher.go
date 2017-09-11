@@ -48,6 +48,8 @@ func NewVideoWatcher(rootDir string, videoPreset string, destLib LibraryConfig) 
 		VideoPreset:   videoPreset,
 		DestLib:       destLib,
 	}
+
+	log.Printf("watching %s for new videos\n", w.WatchDir)
 	go w.start()
 	return w
 }
@@ -55,7 +57,7 @@ func NewVideoWatcher(rootDir string, videoPreset string, destLib LibraryConfig) 
 func (w *VideoWatcher) start() {
 	dirWatcher, err := fs.NewStableFileWatcher(w.WatchDir)
 	if err != nil {
-		log.Fatal(errors.Wrapf(err, "Unable to watch %s", w.WatchDir))
+		log.Fatal(errors.Wrapf(err, "unable to watch %s", w.WatchDir))
 	}
 	defer dirWatcher.Close()
 

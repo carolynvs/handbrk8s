@@ -33,15 +33,15 @@ spec:
         image: carolynvs/handbrk8s-uploader:latest
         imagePullPolicy: Always
         args:
-		- "-f"
+        - "-f"
         - "{{.TranscodedFile}}"
         - "--plex-server"
         - "{{.PlexServer}}"
-		- "--plex-library"
+        - "--plex-library"
         - "{{.PlexLibrary}}"
-		- "--plex-share"
+        - "--plex-share"
         - "{{.PlexShare}}"
-		- "--raw"
+        - "--raw"
         - "{{.RawFile}}"
         env:
         - name: PLEX_TOKEN

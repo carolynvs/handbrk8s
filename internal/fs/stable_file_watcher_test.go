@@ -95,10 +95,7 @@ func TestCopyFileWatcher_NewFile(t *testing.T) {
 	time.Sleep(w.StableThreshold)
 
 	// Stop listening for events
-	err = w.Close()
-	if err != nil {
-		t.Fatalf("%#v", err)
-	}
+	w.Close()
 
 	// Wait for all the events to be processed
 	fmt.Println("Wait for all events to be processed")
@@ -151,10 +148,7 @@ func TestCopyFileWatcher_ExistingFile(t *testing.T) {
 	time.Sleep(w.StableThreshold)
 
 	// Stop listening for events
-	err = w.Close()
-	if err != nil {
-		t.Fatalf("%#v", err)
-	}
+	w.Close()
 
 	// Wait for all the events to be processed
 	fmt.Println("Wait for all events to be processed")
@@ -213,10 +207,7 @@ func TestCopyFileWatcher_DeletedFile(t *testing.T) {
 	time.Sleep(w.StableThreshold)
 
 	// Stop listening for events
-	err = w.Close()
-	if err != nil {
-		t.Fatalf("%#v", err)
-	}
+	w.Close()
 
 	// Wait for all the events to be processed
 	fmt.Println("Wait for all events to be processed")

@@ -45,25 +45,42 @@ func NewStableFileWatcher(watchDir string) (*StableFileWatcher, error) {
 
 	dw, err := fsnotify.NewWatcher()
 	if err != nil {
-		return nil, errors.Wrapf(err, "Unable to create a file system watcher")
+		return nil, errors.Wrapf(err, "unable to create a file system watcher")
 	}
 	w.dirWatcher = dw
 
 	// Note any preexisting files
-	existingFiles, err := ioutil.ReadDir(w.watchDir)
+	existingFiles, err := w.readFiles()
 	if err != nil {
-		return nil, errors.Wrapf(err, "Unable to list %s", w.watchDir)
+		return nil, err
 	}
 
 	// Start watching for new files
 	err = w.dirWatcher.Add(w.watchDir)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Unable to start watching %s", watchDir)
+		return nil, errors.Wrapf(err, "unable to start watching %s", watchDir)
 	}
 
 	go w.start(existingFiles)
 
 	return w, nil
+}
+
+func (w *StableFileWatcher) readFiles() ([]os.FileInfo, error) {
+	items, err := ioutil.ReadDir(w.watchDir)
+	if err != nil {
+		return nil, errors.Wrapf(err, "unable to list %s", w.watchDir)
+	}
+
+	files := make([]os.FileInfo, 0, len(items))
+	for _, item := range items {
+		if !item.IsDir() {
+			log.Printf("found existing video: %s\n", item.Name())
+			files = append(files, item)
+		}
+	}
+
+	return files, nil
 }
 
 func (w *StableFileWatcher) start(existingFiles []os.FileInfo) {
@@ -87,6 +104,7 @@ func (w *StableFileWatcher) start(existingFiles []os.FileInfo) {
 
 // Close all channels.
 func (w *StableFileWatcher) Close() {
+	w.dirWatcher.Close()
 	close(w.done)
 }
 
