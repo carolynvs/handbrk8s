@@ -32,15 +32,13 @@ spec:
         - "--preset"
         - "{{.Preset}}"
         volumeMounts:
-        - mountPath: /watch
-          name: mlp
-      nodeSelector:
-        samba: "yes"
+        - mountPath: /work
+          name: ponyshare
       restartPolicy: OnFailure
       volumes:
-      - name: mlp
+      - name: ponyshare
         hostPath:
-          path: /mlp/movies/raw
+          path: /mlp
 `
 
 // TranscodeJobValues are the set of values to replace in transcodeJobYaml

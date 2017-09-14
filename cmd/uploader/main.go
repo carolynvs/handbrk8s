@@ -28,24 +28,34 @@ func main() {
 	// Determine if the file should be uploaded
 	shouldUpload := false
 	destStat, destErr := os.Stat(uploadPath)
-	if os.IsNotExist(destErr) {
-		fmt.Println("The video is not in on the Plex share and must be uploaded.")
-		shouldUpload = true
+	if destErr != nil {
+		if os.IsNotExist(destErr) {
+			fmt.Println("the video is not in on the Plex share and must be uploaded.")
+			shouldUpload = true
+		} else {
+			err := errors.Wrapf(destErr, "cannot stat %s", uploadPath)
+			cmd.ExitOnRuntimeError(err)
+		}
 	}
 
 	srcStat, srcErr := os.Stat(transcodedPath)
 	if srcErr != nil {
-		if shouldUpload {
-			fmt.Println(errors.Wrapf(srcErr, "cannot stat the transcoded video file '%s'", transcodedPath))
-			os.Exit(cmd.RuntimeError)
+		if os.IsNotExist(srcErr) {
+			if shouldUpload {
+				fmt.Println(errors.Wrapf(srcErr, "cannot stat the transcoded video file '%s'", transcodedPath))
+				os.Exit(cmd.RuntimeError)
+			}
+			fmt.Println("the transcoded video file is gone and was found on the Plex share. Skipping upload.")
+		} else {
+			err := errors.Wrapf(destErr, "cannot stat %s", uploadPath)
+			cmd.ExitOnRuntimeError(err)
 		}
-		fmt.Println("The transcoded video file is gone and was found on the Plex share. Skipping upload.")
-	} else {
+	} else if !shouldUpload {
 		destSize := uint64(destStat.Size())
 		srcSize := uint64(srcStat.Size())
 		if destSize < srcSize {
 			shouldUpload = true
-			fmt.Printf("An existing video file was found on the Plex share, and is smaller than the source video file (%s < %s) and must be re-uploaded.",
+			fmt.Printf("an existing video file was found on the Plex share, and is smaller than the source video file (%s < %s) and must be re-uploaded.",
 				humanize.Bytes(destSize), humanize.Bytes(srcSize))
 		}
 	}
@@ -53,7 +63,7 @@ func main() {
 	shouldRefresh := true
 	if shouldUpload {
 		shouldRefresh = true
-		fmt.Println("Uploading the video to Plex...")
+		fmt.Println("uploading the video to Plex...")
 		err := fs.CopyFile(transcodedPath, uploadPath)
 		cmd.ExitOnRuntimeError(err)
 	}
@@ -64,28 +74,42 @@ func main() {
 
 	// Determine if the Plex library should be refreshed
 	if !shouldRefresh {
-		fmt.Println("Checking for the video in the Plex library...")
+		fmt.Println("checking for the video in the Plex library...")
 		exists, err := lib.HasVideo(filename)
 		cmd.ExitOnRuntimeError(err)
 		shouldRefresh = !exists
 	}
 
 	if shouldRefresh {
-		fmt.Println("Updating the Plex library index...")
+		fmt.Println("updating the Plex library index...")
 		err := lib.Update()
 		cmd.ExitOnRuntimeError(err)
 	} else {
-		fmt.Println("The video is already in the Plex library. Skipping update.")
+		fmt.Println("the video is already in the Plex library. Skipping update.")
 	}
 
 	// Determine if the transcoded file should be removed
-	if _, err := os.Stat(transcodedPath); err != nil {
+	_, err = os.Stat(transcodedPath)
+	if err != nil {
+		if !os.IsNotExist(err) {
+			err = errors.Wrapf(err, "cannot stat %s", transcodedPath)
+			cmd.ExitOnRuntimeError(err)
+		}
+	} else {
+		fmt.Printf("removing %s\n", transcodedPath)
 		err = os.Remove(transcodedPath)
 		cmd.ExitOnRuntimeError(err)
 	}
 
 	// Determine if the original raw file should be removed
-	if _, err := os.Stat(rawPath); err != nil {
+	_, err = os.Stat(rawPath)
+	if err != nil {
+		if !os.IsNotExist(err) {
+			err = errors.Wrapf(err, "cannot stat %s", transcodedPath)
+			cmd.ExitOnRuntimeError(err)
+		}
+	} else {
+		fmt.Printf("removing %s\n", rawPath)
 		err = os.Remove(rawPath)
 		cmd.ExitOnRuntimeError(err)
 	}
@@ -93,8 +117,8 @@ func main() {
 
 // parseArgs reads and validates flags and environment variables.
 func parseArgs() (plexCfg cmd.PlexArgs, transcodedPath, rawPath string) {
-	flag.StringVar(&transcodedPath, "f", "", "Transcoded video file to upload to Plex")
-	flag.StringVar(&rawPath, "raw", "", "Original raw video file to cleanup")
+	flag.StringVar(&transcodedPath, "f", "", "transcoded video file to upload to Plex")
+	flag.StringVar(&rawPath, "raw", "", "original raw video file to cleanup")
 	plexCfg.Parse()
 
 	cmd.ExitOnMissingFlag(transcodedPath, "-f")

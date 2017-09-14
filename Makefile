@@ -6,6 +6,13 @@ default: validate watcher jobchain
 $(DEP):
 	go get -u github.com/golang/dep/cmd/dep
 
+
+handbrakecli:
+	go build ./cmd/handbrakecli
+	cd ./cmd/handbrakecli; CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build
+	cd ./cmd/handbrakecli; docker build -t carolynvs/handbrakecli .
+	docker push carolynvs/handbrakecli
+
 watcher:
 	go build ./cmd/watcher
 	cd ./cmd/watcher; CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build
@@ -42,4 +49,4 @@ deploy:
 tail:
 	kubectl logs -f deploy/watcher
 
-.PHONY: watcher uploader jobchain test validate deploy tail
+.PHONY: handbrakecli watcher uploader jobchain test validate deploy tail

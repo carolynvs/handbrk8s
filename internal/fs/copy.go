@@ -43,3 +43,12 @@ func CopyFile(src, dest string) error {
 
 	return nil
 }
+
+// MoveFile copies the source path to the destination path, and then removes it.
+func MoveFile(src, dest string) error {
+	err := CopyFile(src, dest)
+	if err != nil {
+		return err
+	}
+	return os.Remove(src)
+}

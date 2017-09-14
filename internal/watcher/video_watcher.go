@@ -2,7 +2,6 @@ package watcher
 
 import (
 	"log"
-	"os"
 	"path/filepath"
 	"strings"
 
@@ -39,12 +38,12 @@ type LibraryConfig struct {
 }
 
 // NewVideoWatcher begins watching for new videos to transcode.
-func NewVideoWatcher(rootDir string, videoPreset string, destLib LibraryConfig) *VideoWatcher {
+func NewVideoWatcher(watchDir, workVolume string, videoPreset string, destLib LibraryConfig) *VideoWatcher {
 	w := &VideoWatcher{
 		done:          make(chan struct{}),
-		WatchDir:      filepath.Join(rootDir, "raw"),
-		ClaimDir:      filepath.Join(rootDir, "raw", "claimed"),
-		TranscodedDir: filepath.Join(rootDir, "transcoded"),
+		WatchDir:      watchDir,
+		ClaimDir:      filepath.Join(workVolume, "claimed"),
+		TranscodedDir: filepath.Join(workVolume, "transcoded"),
 		VideoPreset:   videoPreset,
 		DestLib:       destLib,
 	}
@@ -85,7 +84,7 @@ func (w *VideoWatcher) handleVideo(path string) {
 	// Claim the file, prevents attempts to process it a second time
 	claimPath := filepath.Join(w.ClaimDir, filename)
 	log.Println("attempting to claim ", claimPath)
-	err := os.Rename(path, claimPath)
+	err := fs.MoveFile(path, claimPath)
 	if err != nil {
 		log.Println(errors.Wrapf(err, "unable to move %s to %s, skipping for now",
 			path, claimPath))

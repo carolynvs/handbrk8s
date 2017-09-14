@@ -9,13 +9,14 @@ import (
 	"github.com/carolynvs/handbrk8s/internal/watcher"
 )
 
-var watchVolume = "/watch"
+var watchDir = "/watch/movies/raw"
+var workVolume = "/work/movies"
 var videoPreset = "tivo"
 
 func main() {
 	plexCfg := parseArgs()
 
-	w := watcher.NewVideoWatcher(watchVolume, videoPreset, plexCfg)
+	w := watcher.NewVideoWatcher(watchDir, workVolume, videoPreset, plexCfg)
 	defer w.Close()
 
 	// Only stop watching when our process is killed
@@ -29,7 +30,7 @@ func main() {
 }
 
 // parseArgs reads and validates flags and environment variables.
-func parseArgs() (watcher.LibraryConfig) {
+func parseArgs() watcher.LibraryConfig {
 	var args cmd.PlexArgs
 	args.Parse()
 	return args.LibraryConfig

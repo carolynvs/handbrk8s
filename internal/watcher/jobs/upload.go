@@ -47,18 +47,16 @@ spec:
         - name: PLEX_TOKEN
           value: {{.PlexToken}}
         volumeMounts:
-        - mountPath: /movies
-          name: mlp
+        - mountPath: /work
+          name: ponyshare
         - mountPath: /plex
           name: deathstar
-      nodeSelector:
-        samba: "yes"
       # Do not restart containers after they exit
       restartPolicy: Never #OnFailure
       volumes:
-      - name: mlp
+      - name: ponyshare
         hostPath:
-          path: /mlp/movies
+          path: /mlp
       - name: deathstar
         hostPath:
           path: /deathstar/Multimedia
