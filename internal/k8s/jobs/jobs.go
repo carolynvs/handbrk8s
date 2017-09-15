@@ -14,7 +14,7 @@ import (
 // SanitizeJobName replaces characters that aren't allowed in a k8s name with dashes.
 func SanitizeJobName(name string) string {
 	name = strings.ToLower(name)
-	re := regexp.MustCompile(`[^a-z0-9_-]`)
+	re := regexp.MustCompile(`[^a-z0-9-]`)
 	return re.ReplaceAllString(name, "-")
 }
 
