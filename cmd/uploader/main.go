@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/carolynvs/handbrk8s/cmd"
 	"github.com/carolynvs/handbrk8s/internal/fs"
@@ -84,6 +85,23 @@ func main() {
 		fmt.Println("updating the Plex library index...")
 		err := lib.Update()
 		cmd.ExitOnRuntimeError(err)
+
+		fmt.Println("checking that the video in now in the Plex library...")
+		exists := false
+		for i := 0; i < 3; i++ {
+			time.Sleep(1 * time.Second)
+			exists, err = lib.HasVideo(filename)
+			if err != nil {
+				continue
+			}
+			if exists {
+				break
+			}
+		}
+		if !exists {
+			err = errors.New("plex was updated but the video is still not in the library")
+			cmd.ExitOnRuntimeError(err)
+		}
 	} else {
 		fmt.Println("the video is already in the Plex library. Skipping update.")
 	}
