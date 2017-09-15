@@ -34,7 +34,10 @@ func main() {
 			}
 		case err, ok := <-errChan:
 			if ok {
-				fmt.Println(err)
+				fmt.Printf("%#v", err)
+			} else {
+				fmt.Println("Giving up...")
+				os.Exit(cmd.RuntimeError)
 			}
 		}
 	}
