@@ -3,6 +3,7 @@ package plex
 import (
 	"encoding/xml"
 	"fmt"
+	"log"
 	"net/http"
 	"path/filepath"
 
@@ -50,6 +51,8 @@ func (c Client) Get(path string, result interface{}) error {
 	}
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		return errors.Errorf("%d(%s) %s", resp.StatusCode, resp.Status, url)
+	} else {
+		log.Printf("%d(%s) %s", resp.StatusCode, resp.Status, url)
 	}
 	defer resp.Body.Close()
 
