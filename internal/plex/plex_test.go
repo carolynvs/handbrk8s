@@ -10,11 +10,11 @@ func buildClient(t *testing.T) (c Client) {
 	c.Server = os.Getenv("PLEX_SERVER")
 
 	if c.Token == "" {
-		t.Fatal("PLEX_TOKEN is not set")
+		t.Skip("skipping: PLEX_TOKEN is not set")
 	}
 
 	if c.Server == "" {
-		t.Fatal("PLEX_SERVER is not set")
+		t.Skip("skipping: PLEX_SERVER is not set")
 	}
 
 	return c
