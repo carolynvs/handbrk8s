@@ -6,10 +6,12 @@ import (
 	"strings"
 
 	"github.com/carolynvs/handbrk8s/internal/fs"
+	"github.com/carolynvs/handbrk8s/internal/k8s/jobs"
 	"github.com/carolynvs/handbrk8s/internal/plex"
-	"github.com/carolynvs/handbrk8s/internal/watcher/jobs"
 	"github.com/pkg/errors"
 )
+
+const namespace = "handbrk8s"
 
 type VideoWatcher struct {
 	done chan struct{}
@@ -22,6 +24,8 @@ type VideoWatcher struct {
 
 	// TranscodedDir contains completed (transcoded) video files.
 	TranscodedDir string
+
+	FailedDir string
 
 	// VideoPreset is the name of a HandBrake preset.
 	VideoPreset string
@@ -38,10 +42,11 @@ type LibraryConfig struct {
 }
 
 // NewVideoWatcher begins watching for new videos to transcode.
-func NewVideoWatcher(watchDir, workVolume string, videoPreset string, destLib LibraryConfig) *VideoWatcher {
+func NewVideoWatcher(watchDir, failedDir, workVolume string, videoPreset string, destLib LibraryConfig) *VideoWatcher {
 	w := &VideoWatcher{
 		done:          make(chan struct{}),
 		WatchDir:      watchDir,
+		FailedDir:     failedDir,
 		ClaimDir:      filepath.Join(workVolume, "claimed"),
 		TranscodedDir: filepath.Join(workVolume, "transcoded"),
 		VideoPreset:   videoPreset,
@@ -83,7 +88,7 @@ func (w *VideoWatcher) handleVideo(path string) {
 
 	// Claim the file, prevents attempts to process it a second time
 	claimPath := filepath.Join(w.ClaimDir, filename)
-	log.Println("attempting to claim ", claimPath)
+	log.Printf("attempting to claim %s\n", claimPath)
 	err := fs.MoveFile(path, claimPath)
 	if err != nil {
 		log.Println(errors.Wrapf(err, "unable to move %s to %s, skipping for now",
@@ -92,14 +97,30 @@ func (w *VideoWatcher) handleVideo(path string) {
 	}
 
 	transcodedPath := filepath.Join(w.TranscodedDir, filename)
-	tj, err := jobs.CreateTranscodeJob(claimPath, transcodedPath, w.VideoPreset)
+	tj, err := w.createTranscodeJob(claimPath, transcodedPath)
 	if err != nil {
 		log.Println(err)
+		w.cleanupFailedClaim(claimPath)
+		return
 	}
 
-	_, err = jobs.CreateUploadJob(tj, transcodedPath, claimPath, w.DestLib.Config,
-		w.DestLib.Name, w.DestLib.Share)
+	_, err = w.createUploadJob(tj, transcodedPath, claimPath)
 	if err != nil {
 		log.Println(err)
+		err = jobs.Delete(tj, namespace)
+		if err != nil {
+			log.Println(err)
+		}
+		w.cleanupFailedClaim(claimPath)
+		return
+	}
+}
+
+func (w *VideoWatcher) cleanupFailedClaim(claimPath string) {
+	log.Printf("cleaning up failed claim: %s\n", claimPath)
+	failedPath := filepath.Join(w.FailedDir, filepath.Base(claimPath))
+	err := fs.MoveFile(claimPath, failedPath)
+	if err != nil {
+		log.Println(errors.Wrap(err, "unable to cleanup failed claim"))
 	}
 }

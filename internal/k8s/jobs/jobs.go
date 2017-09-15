@@ -2,12 +2,34 @@ package jobs
 
 import (
 	"log"
+	"regexp"
+	"strings"
 
 	"github.com/carolynvs/handbrk8s/internal/k8s/api"
 	"github.com/pkg/errors"
 	_ "k8s.io/client-go/pkg/apis/batch/install"
 	batchv1 "k8s.io/client-go/pkg/apis/batch/v1"
 )
+
+// SanitizeJobName replaces characters that aren't allowed in a k8s name with dashes.
+func SanitizeJobName(name string) string {
+	name = strings.ToLower(name)
+	re := regexp.MustCompile(`[^a-z0-9_-]`)
+	return re.ReplaceAllString(name, "-")
+}
+
+// Delete a job.
+func Delete(name, namespace string) error {
+	log.Printf("deleting job: %s/%s", namespace, name)
+	clusterClient, err := api.GetCurrentClusterClient()
+	if err != nil {
+		return err
+	}
+	jobclient := clusterClient.BatchV1Client.Jobs(namespace)
+
+	err = jobclient.Delete(name, nil)
+	return errors.Wrapf(err, "unable to delete %s/%s", namespace, name)
+}
 
 // CreateFromTemplate creates a job on the current cluster from a template
 // and set of replacement values.

@@ -1,11 +1,10 @@
-package jobs
+package watcher
 
 import (
 	"log"
 	"path/filepath"
 
 	"github.com/carolynvs/handbrk8s/internal/k8s/jobs"
-	"github.com/carolynvs/handbrk8s/internal/plex"
 )
 
 const uploadJobYaml = `
@@ -70,19 +69,19 @@ type uploadJobValues struct {
 }
 
 // CreateUploadJob creates a job to upload a video to Plex
-func CreateUploadJob(waitForJob, transcodedFile, rawFile string, plexCfg plex.Config, destLib, destShare string) (jobName string, err error) {
+func (w *VideoWatcher) createUploadJob(waitForJob, transcodedFile, rawFile string) (jobName string, err error) {
 	filename := filepath.Base(transcodedFile)
 
-	log.Println("creating upload job for ", filename)
+	log.Printf("creating upload job for %s\n", filename)
 	values := uploadJobValues{
-		Name:           sanitizeJobName(filename),
+		Name:           jobs.SanitizeJobName(filename),
 		WaitForJob:     waitForJob,
 		TranscodedFile: transcodedFile,
 		RawFile:        rawFile,
-		PlexServer:     plexCfg.Server,
-		PlexToken:      plexCfg.Token,
-		PlexLibrary:    destLib,
-		PlexShare:      destShare,
+		PlexServer:     w.DestLib.Config.Server,
+		PlexToken:      w.DestLib.Config.Token,
+		PlexLibrary:    w.DestLib.Name,
+		PlexShare:      w.DestLib.Share,
 	}
 	return jobs.CreateFromTemplate(uploadJobYaml, values)
 }

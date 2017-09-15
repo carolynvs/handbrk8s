@@ -1,4 +1,4 @@
-package jobs
+package watcher
 
 import (
 	"log"
@@ -47,15 +47,15 @@ type transcodeJobValues struct {
 }
 
 // CreateTranscodeJob creates a job to transcode a video
-func CreateTranscodeJob(inputPath string, outputPath string, preset string) (jobName string, err error) {
+func (w *VideoWatcher) createTranscodeJob(inputPath string, outputPath string) (jobName string, err error) {
 	filename := filepath.Base(inputPath)
 
-	log.Println("creating transcode job for ", filename)
+	log.Printf("creating transcode job for %s\n", filename)
 	values := transcodeJobValues{
-		Name:       sanitizeJobName(filename),
+		Name:       jobs.SanitizeJobName(filename),
 		InputPath:  inputPath,
 		OutputPath: outputPath,
-		Preset:     preset,
+		Preset:     w.VideoPreset,
 	}
 	return jobs.CreateFromTemplate(transcodeJobYaml, values)
 }

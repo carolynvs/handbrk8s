@@ -10,13 +10,14 @@ import (
 )
 
 var watchDir = "/watch/movies/raw"
+var failedDir = "/watch/movies/failed"
 var workVolume = "/work/movies"
 var videoPreset = "tivo"
 
 func main() {
 	plexCfg := parseArgs()
 
-	w := watcher.NewVideoWatcher(watchDir, workVolume, videoPreset, plexCfg)
+	w := watcher.NewVideoWatcher(watchDir, failedDir, workVolume, videoPreset, plexCfg)
 	defer w.Close()
 
 	// Only stop watching when our process is killed

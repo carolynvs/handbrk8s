@@ -33,7 +33,7 @@ func TestCopyFileWatcher_NewFile(t *testing.T) {
 		t.Fatalf("%#v", err)
 	}
 	defer os.RemoveAll(tmpDir)
-	fmt.Println("Watching ", tmpDir)
+	fmt.Println("watching ", tmpDir)
 
 	w, err := NewStableFileWatcher(tmpDir)
 	w.StableThreshold = testStableThreshold
@@ -98,7 +98,7 @@ func TestCopyFileWatcher_NewFile(t *testing.T) {
 	w.Close()
 
 	// Wait for all the events to be processed
-	fmt.Println("Wait for all events to be processed")
+	fmt.Println("wait for all events to be processed")
 	<-done
 
 	var wantEvents int32 = 1
@@ -115,7 +115,7 @@ func TestCopyFileWatcher_ExistingFile(t *testing.T) {
 		t.Fatalf("%#v", err)
 	}
 	defer os.RemoveAll(tmpDir)
-	fmt.Println("Watching ", tmpDir)
+	fmt.Println("watching ", tmpDir)
 
 	// Create a file in the watched directory
 	tmpfile := filepath.Join(tmpDir, "foo.txt")
@@ -151,7 +151,7 @@ func TestCopyFileWatcher_ExistingFile(t *testing.T) {
 	w.Close()
 
 	// Wait for all the events to be processed
-	fmt.Println("Wait for all events to be processed")
+	fmt.Println("wait for all events to be processed")
 	<-done
 
 	var wantEvents int32 = 1
@@ -168,7 +168,7 @@ func TestCopyFileWatcher_DeletedFile(t *testing.T) {
 		t.Fatalf("%#v", err)
 	}
 	defer os.RemoveAll(tmpDir)
-	fmt.Println("Watching ", tmpDir)
+	fmt.Println("watching ", tmpDir)
 
 	w, err := NewStableFileWatcher(tmpDir)
 	w.StableThreshold = testStableThreshold
@@ -210,7 +210,7 @@ func TestCopyFileWatcher_DeletedFile(t *testing.T) {
 	w.Close()
 
 	// Wait for all the events to be processed
-	fmt.Println("Wait for all events to be processed")
+	fmt.Println("wait for all events to be processed")
 	<-done
 
 	var wantEvents int32 = 0
