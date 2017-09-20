@@ -11,12 +11,12 @@ const uploadJobYaml = `
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: upload-{{.Name}}
+  name: {{.Name}}-upload
   namespace: handbrk8s
 spec:
   template:
     metadata:
-      name: handbrake-{{.Name}}
+      name: {{.Name}}-upload
     spec:
       initContainers:
       - name: jobchain

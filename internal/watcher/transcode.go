@@ -11,12 +11,12 @@ const transcodeJobYaml = `
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: transcode-{{.Name}}
+  name: {{.Name}}-transcode
   namespace: handbrk8s
 spec:
   template:
     metadata:
-      name: handbrake-{{.Name}}
+      name: {{.Name}}-transcode
     spec:
       containers:
       - name: handbrake
