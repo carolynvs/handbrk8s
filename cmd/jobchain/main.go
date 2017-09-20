@@ -25,20 +25,18 @@ func main() {
 			fmt.Println("Stopping...")
 			os.Exit(cmd.Interrupted)
 		case job, ok := <-jobChan:
-			if ok {
-				fmt.Printf("Job completed sucessfully at %s\n", job.Status.CompletionTime)
-				return
-			} else {
+			if !ok {
 				fmt.Println("Giving up...")
 				os.Exit(cmd.RuntimeError)
 			}
+			fmt.Printf("Job completed sucessfully at %s\n", job.Status.CompletionTime)
+			return
 		case err, ok := <-errChan:
 			if ok {
 				fmt.Printf("%#v", err)
-			} else {
-				fmt.Println("Giving up...")
-				os.Exit(cmd.RuntimeError)
 			}
+			fmt.Println("Giving up...")
+			os.Exit(cmd.RuntimeError)
 		}
 	}
 }

@@ -45,13 +45,13 @@ func WaitUntilComplete(done <-chan struct{}, namespace, name string) (<-chan *ba
 			case e := <-events:
 				job, ok := e.Object.(*batchv1.Job)
 				if !ok {
-					errChan <- errors.Errorf("%s", e.Object)
+					errChan <- errors.Errorf("watch returned a non-job:\n%#v", e.Object)
 					continue
 				}
 				if job.Status.Succeeded > 0 {
 					jobChan <- job
 				} else {
-					log.Printf("%#v", job.Status)
+					log.Printf("job hasn't suceeded yet, current status is %#v", job.Status)
 				}
 			}
 		}
