@@ -40,6 +40,8 @@ validate: $(DEP) test
 
 deploy:
 	kubectl apply -f manifests/namespace.yaml
+	kubectl apply -f manifests/work.volumes.yaml
+	kubectl apply -f manifests/plex.volumes.yaml
 	kubectl apply -f manifests/rbac.yaml
 	# HACK: create/delete to force a new container
 	-kubectl delete -f manifests/watcher.yaml

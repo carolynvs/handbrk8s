@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: plex-movies
+  # volumes are global, and are not namespaced
+spec:
+  capacity:
+    storage: 700Gi
+  accessModes:
+  - ReadWriteMany
+  nfs:
+    server: deathstar
+    path: "/Multimedia/movies"
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: plex-movies
+  namespace: handbrk8s
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 700Gi
