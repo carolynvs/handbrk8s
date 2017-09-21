@@ -6,7 +6,6 @@ default: validate watcher jobchain
 $(DEP):
 	go get -u github.com/golang/dep/cmd/dep
 
-
 handbrakecli:
 	go build ./cmd/handbrakecli
 	cd ./cmd/handbrakecli; CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build
@@ -40,11 +39,11 @@ validate: $(DEP) test
 	dep status | grep -v "mismatch"
 
 deploy:
-	kubectl apply -f manifests/handbrk8s.namespace.yaml
-	kubectl apply -f manifests/handbrk8s.rbac.yaml
+	kubectl apply -f manifests/namespace.yaml
+	kubectl apply -f manifests/rbac.yaml
 	# HACK: create/delete to force a new container
-	-kubectl delete -f manifests/handbrk8s.deploy.yaml
-	kubectl create -f manifests/handbrk8s.deploy.yaml
+	-kubectl delete -f manifests/watcher.yaml
+	kubectl create -f manifests/watcher.yaml
 
 tail:
 	kubectl logs -f deploy/watcher

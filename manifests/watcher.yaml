@@ -16,25 +16,25 @@ spec:
         imagePullPolicy: Always
         args:
         - "--plex-server"
-        - "http://192.168.0.103:32400"
+        - "http://deathstar:32400"
         - "--plex-library"
         - "Movies"
         - "--plex-share"
-        - "/plex/Movies"
+        - "/plex/movies"
         env:
         - name: PLEX_TOKEN
           value: "Bpfj5wDaJGqcTBqDT8wJ"
         volumeMounts:
         - mountPath: /watch
-          name: ponydrive
+          name: ponyshare
         - mountPath: /work
           name: ponyshare
       nodeSelector:
-        samba: "yes"
+        ponyshare: ""
       volumes:
-      - name: ponydrive
-        hostPath:
-          path: /media/ponyshare
+      #- name: cluster-movies
+      #  persistentVolumeClaim:
+      #    claimName: cluster-movies
       - name: ponyshare
         hostPath:
-          path: /mlp
+          path: /ponyshare
