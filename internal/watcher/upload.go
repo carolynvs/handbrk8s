@@ -47,18 +47,18 @@ spec:
           value: {{.PlexToken}}
         volumeMounts:
         - mountPath: /work
-          name: ponyshare
+          name: cluster-movies
         - mountPath: /plex
-          name: deathstar
+          name: plex-movies
       # Do not restart containers after they exit
       restartPolicy: Never #OnFailure
       volumes:
-      - name: ponyshare
-        hostPath:
-          path: /mlp
-      - name: deathstar
-        hostPath:
-          path: /deathstar/Multimedia
+      - name: cluster-movies
+        persistentVolumeClaim:
+          claimName: cluster-movies
+      - name: plex-movies
+        persistentVolumeClaim:
+          claimName: plex-movies
 `
 
 type uploadJobValues struct {

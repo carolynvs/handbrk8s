@@ -33,12 +33,12 @@ spec:
         - "{{.Preset}}"
         volumeMounts:
         - mountPath: /work
-          name: ponyshare
+          name: cluster-movies
       restartPolicy: OnFailure
       volumes:
-      - name: ponyshare
-        hostPath:
-          path: /mlp
+      - name: cluster-movies
+        persistentVolumeClaim:
+          claimName: cluster-movies
 `
 
 // TranscodeJobValues are the set of values to replace in transcodeJobYaml

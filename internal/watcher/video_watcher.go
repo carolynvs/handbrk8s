@@ -5,6 +5,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"os"
+
 	"github.com/carolynvs/handbrk8s/internal/fs"
 	"github.com/carolynvs/handbrk8s/internal/k8s/jobs"
 	"github.com/carolynvs/handbrk8s/internal/plex"
@@ -42,20 +44,48 @@ type LibraryConfig struct {
 }
 
 // NewVideoWatcher begins watching for new videos to transcode.
-func NewVideoWatcher(watchDir, failedDir, workVolume string, videoPreset string, destLib LibraryConfig) *VideoWatcher {
+func NewVideoWatcher(watchVolume, workVolume string, videoPreset string, destLib LibraryConfig) (*VideoWatcher, error) {
+	if _, err := os.Stat(watchVolume); os.IsNotExist(err) {
+		return nil, errors.Errorf("watch volume, %s, is not mounted", watchVolume)
+	}
+
+	if _, err := os.Stat(workVolume); os.IsNotExist(err) {
+		return nil, errors.Errorf("work volume, %s, is not mounted", workVolume)
+	}
+
 	w := &VideoWatcher{
 		done:          make(chan struct{}),
-		WatchDir:      watchDir,
-		FailedDir:     failedDir,
+		WatchDir:      filepath.Join(watchVolume, "raw"),
+		FailedDir:     filepath.Join(watchVolume, "failed"),
 		ClaimDir:      filepath.Join(workVolume, "claimed"),
 		TranscodedDir: filepath.Join(workVolume, "transcoded"),
 		VideoPreset:   videoPreset,
 		DestLib:       destLib,
 	}
 
+	err := os.MkdirAll(w.WatchDir, 0755)
+	if err != nil {
+		return nil, errors.Wrapf(err, "unable to create watch directory %s", w.WatchDir)
+	}
+
+	err = os.MkdirAll(w.FailedDir, 0755)
+	if err != nil {
+		return nil, errors.Wrapf(err, "unable to create failed directory %s", w.FailedDir)
+	}
+
+	err = os.MkdirAll(w.ClaimDir, 0755)
+	if err != nil {
+		return nil, errors.Wrapf(err, "unable to create claim directory %s", w.ClaimDir)
+	}
+
+	err = os.MkdirAll(w.TranscodedDir, 0755)
+	if err != nil {
+		return nil, errors.Wrapf(err, "unable to create transcoded directory %s", w.TranscodedDir)
+	}
+
 	log.Printf("watching %s for new videos\n", w.WatchDir)
 	go w.start()
-	return w
+	return w, nil
 }
 
 func (w *VideoWatcher) start() {

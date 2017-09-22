@@ -10,7 +10,7 @@ spec:
   - ReadWriteMany
   nfs:
     server: ponyshare
-    path: "/movies"
+    path: "/ponyshare/movies"
 ---
 kind: PersistentVolumeClaim
 apiVersion: v1

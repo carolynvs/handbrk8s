@@ -9,15 +9,17 @@ import (
 	"github.com/carolynvs/handbrk8s/internal/watcher"
 )
 
-var watchDir = "/watch/movies/raw"
-var failedDir = "/watch/movies/failed"
-var workVolume = "/work/movies"
+var watchVolume = "/watch"
+var workVolume = "/work"
 var videoPreset = "tivo"
 
 func main() {
 	plexCfg := parseArgs()
 
-	w := watcher.NewVideoWatcher(watchDir, failedDir, workVolume, videoPreset, plexCfg)
+	w, err := watcher.NewVideoWatcher(watchVolume, workVolume, videoPreset, plexCfg)
+	if err != nil {
+		cmd.ExitOnRuntimeError(err)
+	}
 	defer w.Close()
 
 	// Only stop watching when our process is killed

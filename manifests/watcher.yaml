@@ -20,7 +20,7 @@ spec:
         - "--plex-library"
         - "Movies"
         - "--plex-share"
-        - "/plex/movies"
+        - "/plex"
         env:
         - name: PLEX_TOKEN
           value: "Bpfj5wDaJGqcTBqDT8wJ"
@@ -32,9 +32,6 @@ spec:
       nodeSelector:
         ponyshare: ""
       volumes:
-      #- name: cluster-movies
-      #  persistentVolumeClaim:
-      #    claimName: cluster-movies
       - name: ponyshare
         hostPath:
-          path: /ponyshare
+          path: /ponyshare/movies
