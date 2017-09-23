@@ -4,7 +4,7 @@ GOPATH ?= $(HOME)/go
 GOBIN := $(GOPATH)/bin
 DEP := $(GOBIN)/dep
 
-default: validate watcher jobchain
+default: validate watcher jobchain handbrakecli uploader
 
 $(DEP):
 	go get -u github.com/golang/dep/cmd/dep
