@@ -9,9 +9,7 @@ default: validate watcher jobchain handbrakecli uploader
 $(DEP):
 	go get -u github.com/golang/dep/cmd/dep
 
-handbrakecli:
-	go build ./cmd/handbrakecli
-	cd ./cmd/handbrakecli; CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build
+handbrakecli: $(wildcard ./cmd/handbrakecli/*)
 	cd ./cmd/handbrakecli; docker build -t carolynvs/handbrakecli .
 	docker push carolynvs/handbrakecli
 
