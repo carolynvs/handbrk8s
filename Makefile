@@ -14,19 +14,16 @@ handbrakecli: $(wildcard ./cmd/handbrakecli/*)
 	docker push carolynvs/handbrakecli
 
 watcher:
-	go build ./cmd/watcher
 	cd ./cmd/watcher; CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build
 	cd ./cmd/watcher; docker build -t carolynvs/handbrk8s-watcher .
 	docker push carolynvs/handbrk8s-watcher
 
 jobchain:
-	go build ./cmd/jobchain
 	cd ./cmd/jobchain; CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build
 	cd ./cmd/jobchain; docker build -t carolynvs/jobchain .
 	docker push carolynvs/jobchain
 
 uploader:
-	go build ./cmd/uploader
 	cd ./cmd/uploader; CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build
 	cd ./cmd/uploader; docker build -t carolynvs/handbrk8s-uploader .
 	docker push carolynvs/handbrk8s-uploader
