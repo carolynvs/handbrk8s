@@ -20,7 +20,7 @@ type StableFileWatcher struct {
 	done       chan struct{}
 
 	// StableThreshold is the duration that a file must not change
-	// before a signaling an event for the file. Defaults to 5 seconds.
+	// before a signaling an event for the file.
 	StableThreshold time.Duration
 
 	// Events signal when a file has stabilized.
@@ -35,11 +35,11 @@ type FileEvent struct {
 }
 
 // NewStableFileWatcher watcher for a directory.
-func NewStableFileWatcher(watchDir string) (*StableFileWatcher, error) {
+func NewStableFileWatcher(watchDir string, stableThreshold time.Duration) (*StableFileWatcher, error) {
 	w := &StableFileWatcher{
 		watchDir:        watchDir,
 		done:            make(chan struct{}),
-		StableThreshold: 5 * time.Second,
+		StableThreshold: stableThreshold,
 		Events:          make(chan FileEvent),
 	}
 

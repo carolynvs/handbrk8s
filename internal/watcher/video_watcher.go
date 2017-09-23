@@ -7,6 +7,8 @@ import (
 
 	"os"
 
+	"time"
+
 	"github.com/carolynvs/handbrk8s/internal/fs"
 	"github.com/carolynvs/handbrk8s/internal/k8s/jobs"
 	"github.com/carolynvs/handbrk8s/internal/plex"
@@ -89,7 +91,7 @@ func NewVideoWatcher(watchVolume, workVolume string, videoPreset string, destLib
 }
 
 func (w *VideoWatcher) start() {
-	dirWatcher, err := fs.NewStableFileWatcher(w.WatchDir)
+	dirWatcher, err := fs.NewStableFileWatcher(w.WatchDir, 5*time.Second)
 	if err != nil {
 		log.Fatal(errors.Wrapf(err, "unable to watch %s", w.WatchDir))
 	}

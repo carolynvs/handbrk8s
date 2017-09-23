@@ -35,8 +35,7 @@ func TestCopyFileWatcher_NewFile(t *testing.T) {
 	defer os.RemoveAll(tmpDir)
 	fmt.Println("watching ", tmpDir)
 
-	w, err := NewStableFileWatcher(tmpDir)
-	w.StableThreshold = testStableThreshold
+	w, err := NewStableFileWatcher(tmpDir, testStableThreshold)
 
 	// Track how many times an event is raised
 	var gotEvents counter
@@ -128,8 +127,7 @@ func TestCopyFileWatcher_ExistingFile(t *testing.T) {
 		t.Fatalf("%#v", err)
 	}
 
-	w, err := NewStableFileWatcher(tmpDir)
-	w.StableThreshold = testStableThreshold
+	w, err := NewStableFileWatcher(tmpDir, testStableThreshold)
 
 	// Track how many times an event is raised
 	var gotEvents counter
@@ -145,7 +143,7 @@ func TestCopyFileWatcher_ExistingFile(t *testing.T) {
 	}()
 
 	// Give the file time to be considered stable
-	time.Sleep(w.StableThreshold)
+	time.Sleep(w.StableThreshold * 2)
 
 	// Stop listening for events
 	w.Close()
@@ -170,8 +168,7 @@ func TestCopyFileWatcher_DeletedFile(t *testing.T) {
 	defer os.RemoveAll(tmpDir)
 	fmt.Println("watching ", tmpDir)
 
-	w, err := NewStableFileWatcher(tmpDir)
-	w.StableThreshold = testStableThreshold
+	w, err := NewStableFileWatcher(tmpDir, testStableThreshold)
 
 	// Track how many times an event is raised
 	var gotEvents counter
