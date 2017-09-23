@@ -1,5 +1,6 @@
 .SUFFIXES:
 
+GOPATH ?= $(HOME)/go
 GOBIN := $(GOPATH)/bin
 DEP := $(GOBIN)/dep
 
