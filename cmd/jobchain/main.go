@@ -10,6 +10,8 @@ import (
 	"github.com/carolynvs/handbrk8s/internal/k8s/jobs"
 )
 
+// jobchain -name JOBNAME [-namespace NAMESPACE]
+// Exit with 0 only when the job completes successfully
 func main() {
 	name, namespace := parseFlags()
 
