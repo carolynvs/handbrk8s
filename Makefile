@@ -1,3 +1,5 @@
+.SUFFIXES:
+
 GOBIN := $(GOPATH)/bin
 DEP := $(GOBIN)/dep
 
