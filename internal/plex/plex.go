@@ -69,7 +69,7 @@ func (c Client) Get(path string, result interface{}) error {
 // lookup library id from name
 func (c Client) FindLibrary(name string) (library Library, err error) {
 	var result struct {
-		Libraries []Library `xml:"Directory""`
+		Libraries []Library `xml:"Directory"`
 	}
 	err = c.Get("library/sections", &result)
 	if err != nil {
@@ -89,7 +89,7 @@ func (c Client) FindLibrary(name string) (library Library, err error) {
 // list library contents
 func (l Library) List() ([]Video, error) {
 	var result struct {
-		Videos []Video `xml:"Video""`
+		Videos []Video `xml:"Video"`
 	}
 	err := l.c.Get(fmt.Sprintf("library/sections/%s/all", l.Id), &result)
 	if err != nil {
