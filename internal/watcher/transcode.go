@@ -20,8 +20,7 @@ spec:
     spec:
       containers:
       - name: handbrake
-        image: carolynvs/handbrakecli:latest
-        imagePullPolicy: Always
+        image: carolynvs/handbrakecli:1.0.4
         args:
         - "--preset-import-file"
         - "/config/ghb/presets.json"
@@ -34,11 +33,16 @@ spec:
         volumeMounts:
         - mountPath: /work
           name: cluster-movies
+        - name: handbrakecli-config
+          mountPath: /config/ghb
       restartPolicy: OnFailure
       volumes:
       - name: cluster-movies
         persistentVolumeClaim:
           claimName: cluster-movies
+      - name: handbrakecli-config
+        configMap:
+          name: handbrakecli
 `
 
 // TranscodeJobValues are the set of values to replace in transcodeJobYaml
