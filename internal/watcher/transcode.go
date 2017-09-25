@@ -3,47 +3,11 @@ package watcher
 import (
 	"log"
 	"path/filepath"
+	"io/ioutil"
 
 	"github.com/carolynvs/handbrk8s/internal/k8s/jobs"
+	"github.com/pkg/errors"
 )
-
-const transcodeJobYaml = `
-apiVersion: batch/v1
-kind: Job
-metadata:
-  name: {{.Name}}-transcode
-  namespace: handbrk8s
-spec:
-  template:
-    metadata:
-      name: {{.Name}}-transcode
-    spec:
-      containers:
-      - name: handbrake
-        image: carolynvs/handbrakecli:1.0.4
-        args:
-        - "--preset-import-file"
-        - "/config/ghb/presets.json"
-        - "-i"
-        - "{{.InputPath}}"
-        - "-o"
-        - "{{.OutputPath}}"
-        - "--preset"
-        - "{{.Preset}}"
-        volumeMounts:
-        - mountPath: /work
-          name: cluster-movies
-        - name: handbrakecli-config
-          mountPath: /config/ghb
-      restartPolicy: OnFailure
-      volumes:
-      - name: cluster-movies
-        persistentVolumeClaim:
-          claimName: cluster-movies
-      - name: handbrakecli-config
-        configMap:
-          name: handbrakecli
-`
 
 // TranscodeJobValues are the set of values to replace in transcodeJobYaml
 type transcodeJobValues struct {
@@ -52,6 +16,12 @@ type transcodeJobValues struct {
 
 // CreateTranscodeJob creates a job to transcode a video
 func (w *VideoWatcher) createTranscodeJob(inputPath string, outputPath string) (jobName string, err error) {
+	templateFile := filepath.Join(w.TemplatesDir, "transcode.yaml")
+	template, err := ioutil.ReadFile(templateFile)
+	if err != nil {
+		return "", errors.Wrapf(err, "could not read %s", templateFile)
+	}
+
 	filename := filepath.Base(inputPath)
 
 	log.Printf("creating transcode job for %s\n", filename)
@@ -61,5 +31,5 @@ func (w *VideoWatcher) createTranscodeJob(inputPath string, outputPath string) (
 		OutputPath: outputPath,
 		Preset:     w.VideoPreset,
 	}
-	return jobs.CreateFromTemplate(transcodeJobYaml, values)
+	return jobs.CreateFromTemplate(string(template), values)
 }

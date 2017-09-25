@@ -29,9 +29,14 @@ spec:
           name: ponyshare
         - mountPath: /work
           name: ponyshare
+        - mountPath: /config/templates
+          name: job-templates
       nodeSelector:
         ponyshare: ""
       volumes:
       - name: ponyshare
         hostPath:
           path: /ponyshare/movies
+      - name: job-templates
+        configMap:
+          name: job-templates

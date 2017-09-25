@@ -9,6 +9,7 @@ import (
 	"github.com/carolynvs/handbrk8s/internal/watcher"
 )
 
+var configVolume = "/config"
 var watchVolume = "/watch"
 var workVolume = "/work"
 var videoPreset = "tivo"
@@ -16,7 +17,7 @@ var videoPreset = "tivo"
 func main() {
 	plexCfg := parseArgs()
 
-	w, err := watcher.NewVideoWatcher(watchVolume, workVolume, videoPreset, plexCfg)
+	w, err := watcher.NewVideoWatcher(configVolume, watchVolume, workVolume, videoPreset, plexCfg)
 	if err != nil {
 		cmd.ExitOnRuntimeError(err)
 	}

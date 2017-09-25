@@ -2,11 +2,9 @@ package watcher
 
 import (
 	"log"
+	"os"
 	"path/filepath"
 	"strings"
-
-	"os"
-
 	"time"
 
 	"github.com/carolynvs/handbrk8s/internal/fs"
@@ -15,7 +13,10 @@ import (
 	"github.com/pkg/errors"
 )
 
-const namespace = "handbrk8s"
+const (
+	namespace         = "handbrk8s"
+	jobTemplateCfgKey = "job-templates"
+)
 
 type VideoWatcher struct {
 	done chan struct{}
@@ -28,6 +29,9 @@ type VideoWatcher struct {
 
 	// TranscodedDir contains completed (transcoded) video files.
 	TranscodedDir string
+
+	// TemplatesDir contains templates for jobs that are created by the watcher.
+	TemplatesDir string
 
 	FailedDir string
 
@@ -46,7 +50,11 @@ type LibraryConfig struct {
 }
 
 // NewVideoWatcher begins watching for new videos to transcode.
-func NewVideoWatcher(watchVolume, workVolume string, videoPreset string, destLib LibraryConfig) (*VideoWatcher, error) {
+func NewVideoWatcher(configVolume, watchVolume, workVolume string, videoPreset string, destLib LibraryConfig) (*VideoWatcher, error) {
+	if _, err := os.Stat(configVolume); os.IsNotExist(err) {
+		return nil, errors.Errorf("config volume, %s, is not mounted", configVolume)
+	}
+
 	if _, err := os.Stat(watchVolume); os.IsNotExist(err) {
 		return nil, errors.Errorf("watch volume, %s, is not mounted", watchVolume)
 	}
@@ -61,6 +69,7 @@ func NewVideoWatcher(watchVolume, workVolume string, videoPreset string, destLib
 		FailedDir:     filepath.Join(watchVolume, "failed"),
 		ClaimDir:      filepath.Join(workVolume, "claimed"),
 		TranscodedDir: filepath.Join(workVolume, "transcoded"),
+		TemplatesDir:  filepath.Join(configVolume, "templates"),
 		VideoPreset:   videoPreset,
 		DestLib:       destLib,
 	}
@@ -129,17 +138,17 @@ func (w *VideoWatcher) handleVideo(path string) {
 	}
 
 	transcodedPath := filepath.Join(w.TranscodedDir, filename)
-	tj, err := w.createTranscodeJob(claimPath, transcodedPath)
+	transcodeJobName, err := w.createTranscodeJob(claimPath, transcodedPath)
 	if err != nil {
 		log.Println(err)
 		w.cleanupFailedClaim(claimPath)
 		return
 	}
 
-	_, err = w.createUploadJob(tj, transcodedPath, claimPath)
+	_, err = w.createUploadJob(transcodeJobName, transcodedPath, claimPath)
 	if err != nil {
 		log.Println(err)
-		err = jobs.Delete(tj, namespace)
+		err = jobs.Delete(transcodeJobName, namespace)
 		if err != nil {
 			log.Println(err)
 		}

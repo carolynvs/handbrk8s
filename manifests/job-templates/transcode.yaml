@@ -1,0 +1,40 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{.Name}}-transcode
+  namespace: handbrk8s
+spec:
+  template:
+    metadata:
+      name: {{.Name}}-transcode
+    spec:
+      containers:
+      - name: handbrake
+        image: carolynvs/handbrakecli:1.0.4
+        resources:
+          limits:
+            cpu: "1"
+          requests:
+            cpu: "1"
+        args:
+        - "--preset-import-file"
+        - "/config/ghb/presets.json"
+        - "-i"
+        - "{{.InputPath}}"
+        - "-o"
+        - "{{.OutputPath}}"
+        - "--preset"
+        - "{{.Preset}}"
+        volumeMounts:
+        - mountPath: /work
+          name: cluster-movies
+        - name: handbrakecli-config
+          mountPath: /config/ghb
+      restartPolicy: OnFailure
+      volumes:
+      - name: cluster-movies
+        persistentVolumeClaim:
+          claimName: cluster-movies
+      - name: handbrakecli-config
+        configMap:
+          name: handbrakecli

@@ -1,0 +1,50 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{.Name}}-upload
+  namespace: handbrk8s
+spec:
+  template:
+    metadata:
+      name: {{.Name}}-upload
+    spec:
+      initContainers:
+      - name: jobchain
+        image: carolynvs/jobchain:latest
+        imagePullPolicy: Always
+        args:
+        - "--namespace"
+        - "handbrk8s"
+        - "--name"
+        - "{{.WaitForJob}}"
+      containers:
+      - name: uploader
+        image: carolynvs/handbrk8s-uploader:latest
+        imagePullPolicy: Always
+        args:
+        - "-f"
+        - "{{.TranscodedFile}}"
+        - "--plex-server"
+        - "{{.PlexServer}}"
+        - "--plex-library"
+        - "{{.PlexLibrary}}"
+        - "--plex-share"
+        - "{{.PlexShare}}"
+        - "--raw"
+        - "{{.RawFile}}"
+        env:
+        - name: PLEX_TOKEN
+          value: {{.PlexToken}}
+        volumeMounts:
+        - mountPath: /work
+          name: cluster-movies
+        - mountPath: /plex
+          name: plex-movies
+      restartPolicy: OnFailure
+      volumes:
+      - name: cluster-movies
+        persistentVolumeClaim:
+          claimName: cluster-movies
+      - name: plex-movies
+        persistentVolumeClaim:
+          claimName: plex-movies

@@ -1,65 +1,13 @@
 package watcher
 
 import (
+	"io/ioutil"
 	"log"
 	"path/filepath"
 
 	"github.com/carolynvs/handbrk8s/internal/k8s/jobs"
+	"github.com/pkg/errors"
 )
-
-const uploadJobYaml = `
-apiVersion: batch/v1
-kind: Job
-metadata:
-  name: {{.Name}}-upload
-  namespace: handbrk8s
-spec:
-  template:
-    metadata:
-      name: {{.Name}}-upload
-    spec:
-      initContainers:
-      - name: jobchain
-        image: carolynvs/jobchain:latest
-        imagePullPolicy: Always
-        args:
-        - "--namespace"
-        - "handbrk8s"
-        - "--name"
-        - "{{.WaitForJob}}"
-      containers:
-      - name: uploader
-        image: carolynvs/handbrk8s-uploader:latest
-        imagePullPolicy: Always
-        args:
-        - "-f"
-        - "{{.TranscodedFile}}"
-        - "--plex-server"
-        - "{{.PlexServer}}"
-        - "--plex-library"
-        - "{{.PlexLibrary}}"
-        - "--plex-share"
-        - "{{.PlexShare}}"
-        - "--raw"
-        - "{{.RawFile}}"
-        env:
-        - name: PLEX_TOKEN
-          value: {{.PlexToken}}
-        volumeMounts:
-        - mountPath: /work
-          name: cluster-movies
-        - mountPath: /plex
-          name: plex-movies
-      # Do not restart containers after they exit
-      restartPolicy: Never #OnFailure
-      volumes:
-      - name: cluster-movies
-        persistentVolumeClaim:
-          claimName: cluster-movies
-      - name: plex-movies
-        persistentVolumeClaim:
-          claimName: plex-movies
-`
 
 type uploadJobValues struct {
 	WaitForJob                    string
@@ -70,6 +18,12 @@ type uploadJobValues struct {
 
 // CreateUploadJob creates a job to upload a video to Plex
 func (w *VideoWatcher) createUploadJob(waitForJob, transcodedFile, rawFile string) (jobName string, err error) {
+	templateFile := filepath.Join(w.TemplatesDir, "upload.yaml")
+	template, err := ioutil.ReadFile(templateFile)
+	if err != nil {
+		return "", errors.Wrapf(err, "could not read %s", templateFile)
+	}
+
 	filename := filepath.Base(transcodedFile)
 
 	log.Printf("creating upload job for %s\n", filename)
@@ -83,5 +37,5 @@ func (w *VideoWatcher) createUploadJob(waitForJob, transcodedFile, rawFile strin
 		PlexLibrary:    w.DestLib.Name,
 		PlexShare:      w.DestLib.Share,
 	}
-	return jobs.CreateFromTemplate(uploadJobYaml, values)
+	return jobs.CreateFromTemplate(string(template), values)
 }
