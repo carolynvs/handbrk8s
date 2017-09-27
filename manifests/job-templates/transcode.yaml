@@ -12,10 +12,8 @@ spec:
       - name: handbrake
         image: carolynvs/handbrakecli:1.0.4
         resources:
-          limits:
-            cpu: "1"
           requests:
-            cpu: "1"
+            cpu: "3"
         args:
         - "--preset-import-file"
         - "/config/ghb/presets.json"
