@@ -54,9 +54,9 @@ func main() {
 	} else if !shouldUpload {
 		destSize := uint64(destStat.Size())
 		srcSize := uint64(srcStat.Size())
-		if destSize < srcSize {
+		if destSize != srcSize {
 			shouldUpload = true
-			fmt.Printf("an existing video file was found on the Plex share, and is smaller than the source video file (%s < %s) and must be re-uploaded.",
+			fmt.Printf("an existing video file was found on the Plex share, and is a different size than the source video file (%s != %s) and must be re-uploaded.",
 				humanize.Bytes(destSize), humanize.Bytes(srcSize))
 		}
 	}
