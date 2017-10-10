@@ -13,10 +13,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-const (
-	namespace         = "handbrk8s"
-	jobTemplateCfgKey = "job-templates"
-)
+const namespace = "handbrk8s"
 
 type VideoWatcher struct {
 	done chan struct{}

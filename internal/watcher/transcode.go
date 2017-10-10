@@ -1,9 +1,9 @@
 package watcher
 
 import (
+	"io/ioutil"
 	"log"
 	"path/filepath"
-	"io/ioutil"
 
 	"github.com/carolynvs/handbrk8s/internal/k8s/jobs"
 	"github.com/pkg/errors"

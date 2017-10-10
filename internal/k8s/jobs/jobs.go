@@ -7,6 +7,7 @@ import (
 
 	"github.com/carolynvs/handbrk8s/internal/k8s/api"
 	"github.com/pkg/errors"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	_ "k8s.io/client-go/pkg/apis/batch/install"
 	batchv1 "k8s.io/client-go/pkg/apis/batch/v1"
 )
@@ -28,7 +29,11 @@ func Delete(name, namespace string) error {
 	jobclient := clusterClient.BatchV1Client.Jobs(namespace)
 
 	err = jobclient.Delete(name, nil)
-	return errors.Wrapf(err, "unable to delete %s/%s", namespace, name)
+	if !apierrors.IsNotFound(err) {
+		return errors.Wrapf(err, "unable to delete %s/%s", namespace, name)
+	}
+
+	return nil
 }
 
 // CreateFromTemplate creates a job on the current cluster from a template
@@ -39,6 +44,10 @@ func CreateFromTemplate(yamlTemplate string, values interface{}) (jobName string
 		return "", err
 	}
 
+	return CreateOrReplace(j)
+}
+
+func CreateOrReplace(j *batchv1.Job) (jobName string, err error) {
 	clusterClient, err := api.GetCurrentClusterClient()
 	if err != nil {
 		return "", err
@@ -46,7 +55,22 @@ func CreateFromTemplate(yamlTemplate string, values interface{}) (jobName string
 	jobclient := clusterClient.BatchV1Client.Jobs(j.Namespace)
 
 	result, err := jobclient.Create(j)
-	if err != nil {
+	if apierrors.IsAlreadyExists(err) {
+		delerr := Delete(j.Name, j.Namespace)
+		if delerr != nil {
+			return "", errors.Wrapf(delerr, "unable to delete existing job %s so that it can be recreated", j.Name)
+		}
+
+		errChan := WaitUntilDeleted(nil, j.Namespace, j.Name)
+		select {
+		case delerr, waiting := <-errChan:
+			if waiting && delerr != nil {
+				return "", errors.Wrapf(delerr, "unable to wait for the %s job to be deleted", j.Name)
+			}
+		}
+
+		return CreateOrReplace(j)
+	} else if err != nil {
 		yaml, _ := api.SerializeObject(j)
 		return "", errors.Wrapf(err, "unable to create job from:\n%s", yaml)
 	}
