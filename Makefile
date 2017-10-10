@@ -34,17 +34,24 @@ publish:
 	docker push carolynvs/jobchain
 	docker push carolynvs/handbrk8s-uploader
 
-deploy:
+init:
 	kubectl apply -f manifests/namespace.yaml
 	kubectl apply -f manifests/work.volumes.yaml
 	kubectl apply -f manifests/plex.volumes.yaml
 	kubectl apply -f manifests/rbac.yaml
+	kubectl create configmap handbrakecli --from-file=cmd/handbrakecli/presets.json
+	kubectl create configmap job-templates --from-file=manifests/job-templates/
+	kubectl create -f manifests/watcher.yaml
+
+config:
 	# HACK: https://github.com/kubernetes/kubernetes/issues/30558
 	kubectl create configmap handbrakecli --dry-run -o yaml --from-file=cmd/handbrakecli/presets.json \
 	  | kubectl replace -f -
 	kubectl create configmap job-templates --dry-run -o yaml --from-file=manifests/job-templates/ \
-   	  | kubectl replace -f -
-   	# HACK: force the container to be recreated with the latest image
+	  | kubectl replace -f -
+
+deploy: config
+	# HACK: force the container to be recreated with the latest image
 	-kubectl delete -f manifests/watcher.yaml
 	kubectl create -f manifests/watcher.yaml
 
