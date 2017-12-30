@@ -1,12 +1,10 @@
 package fs
 
 import (
-	"io/ioutil"
 	"log"
 	"os"
-	"time"
-
 	"path/filepath"
+	"time"
 
 	"github.com/fsnotify/fsnotify"
 	"github.com/pkg/errors"
@@ -15,9 +13,10 @@ import (
 // StableFile watches for new files, waiting for the file to be completely
 // written before signaling an event.
 type StableFileWatcher struct {
-	watchDir   string
-	dirWatcher *fsnotify.Watcher
-	done       chan struct{}
+	watchDir      string
+	dirWatcher    *fsnotify.Watcher
+	done          chan struct{}
+	unstableFiles map[string]struct{}
 
 	// StableThreshold is the duration that a file must not change
 	// before a signaling an event for the file.
@@ -39,6 +38,7 @@ func NewStableFileWatcher(watchDir string, stableThreshold time.Duration) (*Stab
 	w := &StableFileWatcher{
 		watchDir:        watchDir,
 		done:            make(chan struct{}),
+		unstableFiles:   make(map[string]struct{}),
 		StableThreshold: stableThreshold,
 		Events:          make(chan FileEvent),
 	}
@@ -66,27 +66,25 @@ func NewStableFileWatcher(watchDir string, stableThreshold time.Duration) (*Stab
 	return w, nil
 }
 
-func (w *StableFileWatcher) readFiles() ([]os.FileInfo, error) {
-	items, err := ioutil.ReadDir(w.watchDir)
-	if err != nil {
-		return nil, errors.Wrapf(err, "unable to list %s", w.watchDir)
-	}
+func (w *StableFileWatcher) readFiles() ([]string, error) {
+	var files []string
 
-	files := make([]os.FileInfo, 0, len(items))
-	for _, item := range items {
-		if !item.IsDir() {
-			log.Printf("found existing video: %s\n", item.Name())
-			files = append(files, item)
+	filepath.Walk(w.watchDir, func(path string, item os.FileInfo, err error) error {
+		if item.IsDir() {
+			w.dirWatcher.Add(path)
+		} else {
+			log.Printf("found existing video: %s\n", path)
+			files = append(files, path)
 		}
-	}
+		return nil
+	})
 
 	return files, nil
 }
 
-func (w *StableFileWatcher) start(existingFiles []os.FileInfo) {
+func (w *StableFileWatcher) start(existingFiles []string) {
 	for _, file := range existingFiles {
-		path := filepath.Join(w.watchDir, file.Name())
-		go w.waitUntilFileIsStable(path)
+		go w.waitUntilFileIsStable(file)
 	}
 
 	for {
@@ -94,9 +92,19 @@ func (w *StableFileWatcher) start(existingFiles []os.FileInfo) {
 		case <-w.done:
 			close(w.Events)
 			return
-		case fileEvent := <-w.dirWatcher.Events:
-			if fileEvent.Op&fsnotify.Create == fsnotify.Create {
-				go w.waitUntilFileIsStable(fileEvent.Name)
+		case e := <-w.dirWatcher.Events:
+			info, err := os.Stat(e.Name)
+			if err != nil {
+				// Attempt to stop watching a deleted directory or file
+				w.dirWatcher.Remove(e.Name)
+				delete(w.unstableFiles, e.Name)
+				continue
+			}
+
+			if info.IsDir() {
+				w.dirWatcher.Add(e.Name)
+			} else {
+				go w.waitUntilFileIsStable(e.Name)
 			}
 		}
 	}
@@ -111,7 +119,10 @@ func (w *StableFileWatcher) Close() {
 // waitUntilFileIsStable waits until the file doesn't change for a set amount of
 // time. This prevents acting on a file that is still copying, being written.
 func (w *StableFileWatcher) waitUntilFileIsStable(path string) {
-	// TODO: reuse the directory watcher and filter
+	if _, ok := w.unstableFiles[path]; ok {
+		return
+	}
+
 	fw, err := fsnotify.NewWatcher()
 	if err != nil {
 		log.Println(errors.Wrapf(err, "unable to create watcher, skipping %s", path))
@@ -123,6 +134,7 @@ func (w *StableFileWatcher) waitUntilFileIsStable(path string) {
 		log.Println(errors.Wrapf(err, "unable to watch %s, skipping", path))
 		return
 	}
+	w.unstableFiles[path] = struct{}{}
 
 	timer := time.NewTimer(w.StableThreshold)
 	defer timer.Stop()
@@ -130,6 +142,7 @@ func (w *StableFileWatcher) waitUntilFileIsStable(path string) {
 	for {
 		select {
 		case <-w.done:
+			delete(w.unstableFiles, path)
 			return
 		case <-fw.Events:
 			// Start the wait over again, the file was changed
@@ -138,6 +151,7 @@ func (w *StableFileWatcher) waitUntilFileIsStable(path string) {
 			}
 			timer.Reset(w.StableThreshold)
 		case <-timer.C:
+			delete(w.unstableFiles, path)
 			// Make sure the file is still present
 			_, err := os.Stat(path)
 			if err != nil {
