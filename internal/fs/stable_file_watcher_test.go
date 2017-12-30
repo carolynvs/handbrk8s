@@ -33,7 +33,7 @@ func TestCopyFileWatcher_NewFile(t *testing.T) {
 		t.Fatalf("%#v", err)
 	}
 	defer os.RemoveAll(tmpDir)
-	fmt.Println("watching ", tmpDir)
+	t.Log("watching ", tmpDir)
 
 	w, err := NewStableFileWatcher(tmpDir, testStableThreshold)
 
@@ -42,7 +42,7 @@ func TestCopyFileWatcher_NewFile(t *testing.T) {
 	done := make(chan bool)
 	go func() {
 		for e := range w.Events {
-			fmt.Println(e)
+			t.Log(e)
 			gotEvents.increment()
 		}
 
@@ -97,7 +97,7 @@ func TestCopyFileWatcher_NewFile(t *testing.T) {
 	w.Close()
 
 	// Wait for all the events to be processed
-	fmt.Println("wait for all events to be processed")
+	t.Log("wait for all events to be processed")
 	<-done
 
 	var wantEvents int32 = 1
@@ -114,7 +114,7 @@ func TestCopyFileWatcher_ExistingFile(t *testing.T) {
 		t.Fatalf("%#v", err)
 	}
 	defer os.RemoveAll(tmpDir)
-	fmt.Println("watching ", tmpDir)
+	t.Log("watching ", tmpDir)
 
 	// Create a file in the watched directory
 	tmpfile := filepath.Join(tmpDir, "foo.txt")
@@ -134,7 +134,7 @@ func TestCopyFileWatcher_ExistingFile(t *testing.T) {
 	done := make(chan bool)
 	go func() {
 		for e := range w.Events {
-			fmt.Println(e)
+			t.Log(e)
 			gotEvents.increment()
 		}
 
@@ -149,7 +149,7 @@ func TestCopyFileWatcher_ExistingFile(t *testing.T) {
 	w.Close()
 
 	// Wait for all the events to be processed
-	fmt.Println("wait for all events to be processed")
+	t.Log("wait for all events to be processed")
 	<-done
 
 	var wantEvents int32 = 1
@@ -166,7 +166,7 @@ func TestCopyFileWatcher_DeletedFile(t *testing.T) {
 		t.Fatalf("%#v", err)
 	}
 	defer os.RemoveAll(tmpDir)
-	fmt.Println("watching ", tmpDir)
+	t.Log("watching ", tmpDir)
 
 	w, err := NewStableFileWatcher(tmpDir, testStableThreshold)
 
@@ -175,7 +175,7 @@ func TestCopyFileWatcher_DeletedFile(t *testing.T) {
 	done := make(chan bool)
 	go func() {
 		for e := range w.Events {
-			fmt.Println(e)
+			t.Log(e)
 			gotEvents.increment()
 		}
 
@@ -207,7 +207,7 @@ func TestCopyFileWatcher_DeletedFile(t *testing.T) {
 	w.Close()
 
 	// Wait for all the events to be processed
-	fmt.Println("wait for all events to be processed")
+	t.Log("wait for all events to be processed")
 	<-done
 
 	var wantEvents int32 = 0
