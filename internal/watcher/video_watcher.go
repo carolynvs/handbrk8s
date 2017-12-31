@@ -35,19 +35,12 @@ type VideoWatcher struct {
 	// VideoPreset is the name of a HandBrake preset.
 	VideoPreset string
 
-	// DestLib contains connection information to the destination Plex library.
-	DestLib LibraryConfig
-}
-
-// LibraryConfig is the set of information necessary to upload videos to a Plex library.
-type LibraryConfig struct {
-	Config plex.Config
-	Name   string
-	Share  string
+	// PlexCfg contains connection information upload a file to a Plex server.
+	PlexCfg plex.LibraryConfig
 }
 
 // NewVideoWatcher begins watching for new videos to transcode.
-func NewVideoWatcher(configVolume, watchVolume, workVolume string, videoPreset string, destLib LibraryConfig) (*VideoWatcher, error) {
+func NewVideoWatcher(configVolume, watchVolume, workVolume string, videoPreset string, plexCfg plex.LibraryConfig) (*VideoWatcher, error) {
 	if _, err := os.Stat(configVolume); os.IsNotExist(err) {
 		return nil, errors.Errorf("config volume, %s, is not mounted", configVolume)
 	}
@@ -68,7 +61,7 @@ func NewVideoWatcher(configVolume, watchVolume, workVolume string, videoPreset s
 		TranscodedDir: filepath.Join(workVolume, "transcoded"),
 		TemplatesDir:  filepath.Join(configVolume, "templates"),
 		VideoPreset:   videoPreset,
-		DestLib:       destLib,
+		PlexCfg:       plexCfg,
 	}
 
 	err := os.MkdirAll(w.WatchDir, 0755)
@@ -143,7 +136,10 @@ func (w *VideoWatcher) handleVideo(path string) {
 		return
 	}
 
-	_, err = w.createUploadJob(transcodeJobName, transcodedPath, claimPath)
+	// Assume that the library is the first part of the path, e.g. /watch/LIBRARY/../video.mkv
+	library := filepath.SplitList(pathSuffix)[0]
+
+	_, err = w.createUploadJob(transcodeJobName, transcodedPath, claimPath, library)
 	if err != nil {
 		log.Println(err)
 		err = jobs.Delete(transcodeJobName, namespace)

@@ -10,17 +10,25 @@ import (
 	"github.com/pkg/errors"
 )
 
-type Config struct {
-	Server string
-	Token  string
+// ServerConfig is the set of information necessary to connect to a Plex server.
+type ServerConfig struct {
+	URL   string
+	Token string
+}
+
+// LibraryConfig is the set of information necessary to upload videos to a Plex library.
+type LibraryConfig struct {
+	ServerConfig
+	Name  string
+	Share string
 }
 
 type Client struct {
-	Config
+	ServerConfig
 }
 
-func NewClient(cfg Config) Client {
-	return Client{Config: cfg}
+func NewClient(cfg ServerConfig) Client {
+	return Client{ServerConfig: cfg}
 }
 
 type Library struct {
@@ -43,7 +51,7 @@ func (vf VideoFile) FileName() string {
 }
 
 func (c Client) Get(path string, result interface{}) error {
-	url := fmt.Sprintf("%s/%s?X-Plex-Token=%s", c.Server, path, c.Token)
+	url := fmt.Sprintf("%s/%s?X-Plex-Token=%s", c.URL, path, c.Token)
 
 	resp, err := http.Get(url)
 	if err != nil {

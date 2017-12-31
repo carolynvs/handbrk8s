@@ -11,10 +11,13 @@ spec:
       initContainers:
       - name: prep
         image: alpine:3.5
-        command: sh
+        command: ["sh"]
         args:
-        - "-c"
+        - "-xc"
         - "mkdir -p '{{.OutputDir}}'"
+        volumeMounts:
+        - mountPath: /work
+          name: cluster-movies
       containers:
       - name: handbrake
         image: carolynvs/handbrakecli:1.0.4

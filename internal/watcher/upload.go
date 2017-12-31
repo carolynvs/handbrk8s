@@ -19,7 +19,7 @@ type uploadJobValues struct {
 }
 
 // CreateUploadJob creates a job to upload a video to Plex
-func (w *VideoWatcher) createUploadJob(waitForJob, transcodedFile, rawFile string) (jobName string, err error) {
+func (w *VideoWatcher) createUploadJob(waitForJob, transcodedFile, rawFile, library string) (jobName string, err error) {
 	templateFile := filepath.Join(w.TemplatesDir, "upload.yaml")
 	template, err := ioutil.ReadFile(templateFile)
 	if err != nil {
@@ -35,10 +35,10 @@ func (w *VideoWatcher) createUploadJob(waitForJob, transcodedFile, rawFile strin
 		TranscodedFile:    transcodedFile,
 		RawFile:           rawFile,
 		DestinationSuffix: strings.Replace(transcodedFile, w.TranscodedDir, "", 1),
-		PlexServer:        w.DestLib.Config.Server,
-		PlexToken:         w.DestLib.Config.Token,
-		PlexLibrary:       w.DestLib.Name,
-		PlexShare:         w.DestLib.Share,
+		PlexServer:        w.PlexCfg.URL,
+		PlexToken:         w.PlexCfg.Token,
+		PlexLibrary:       library,
+		PlexShare:         library, // Assume that the library name is the share path
 	}
 	return jobs.CreateFromTemplate(string(template), values)
 }

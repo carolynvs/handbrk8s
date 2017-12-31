@@ -68,7 +68,7 @@ func main() {
 		cmd.ExitOnRuntimeError(err)
 	}
 
-	plexC := plex.NewClient(libCfg.Config)
+	plexC := plex.NewClient(libCfg.ServerConfig)
 	lib, err := plexC.FindLibrary(libCfg.Name)
 	cmd.ExitOnRuntimeError(err)
 
@@ -134,16 +134,27 @@ func main() {
 }
 
 // parseArgs reads and validates flags and environment variables.
-func parseArgs() (plexCfg cmd.PlexArgs, transcodedPath, destinationSuffix, rawPath string) {
+func parseArgs() (plexCfg plex.LibraryConfig, transcodedPath, destinationSuffix, rawPath string) {
 	fs := flag.NewFlagSet("uploader", flag.ExitOnError)
 
 	fs.StringVar(&transcodedPath, "f", "", "transcoded video file to upload to Plex")
 	fs.StringVar(&destinationSuffix, "suffix", "", "relative path of the destination file")
 	fs.StringVar(&rawPath, "raw", "", "original raw video file to cleanup")
-	plexCfg.Parse(fs)
+
+	fs.StringVar(&plexCfg.URL, "plex-server", "",
+		"Base URL of the Plex server, for example http://192.168.0.105:32400")
+	fs.StringVar(&plexCfg.Token, "plex-token", os.Getenv("PLEX_TOKEN"), "Plex authentication token [PLEX_TOKEN]")
+	fs.StringVar(&plexCfg.Name, "plex-library", "", "Name of a Plex library")
+	fs.StringVar(&plexCfg.Share, "plex-share", "", "Location of the Plex share")
+
+	fs.Parse(os.Args[1:])
 
 	cmd.ExitOnMissingFlag(transcodedPath, "-f")
 	cmd.ExitOnMissingFlag(rawPath, "-raw")
+	cmd.ExitOnMissingFlag(plexCfg.URL, "-plex-server")
+	cmd.ExitOnMissingFlag(plexCfg.Token, "-plex-token")
+	cmd.ExitOnMissingFlag(plexCfg.Name, "-plex-library")
+	cmd.ExitOnMissingFlag(plexCfg.Share, "-plex-share")
 
 	return plexCfg, transcodedPath, destinationSuffix, rawPath
 }

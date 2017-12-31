@@ -17,10 +17,6 @@ spec:
         args:
         - "--plex-server"
         - "http://deathstar:32400"
-        - "--plex-library"
-        - "Movies"
-        - "--plex-share"
-        - "/plex"
         env:
         - name: PLEX_TOKEN
           value: "Bpfj5wDaJGqcTBqDT8wJ"

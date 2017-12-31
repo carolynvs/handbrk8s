@@ -7,13 +7,13 @@ import (
 
 func buildClient(t *testing.T) (c Client) {
 	c.Token = os.Getenv("PLEX_TOKEN")
-	c.Server = os.Getenv("PLEX_SERVER")
+	c.URL = os.Getenv("PLEX_SERVER")
 
 	if c.Token == "" {
 		t.Skip("skipping: PLEX_TOKEN is not set")
 	}
 
-	if c.Server == "" {
+	if c.URL == "" {
 		t.Skip("skipping: PLEX_SERVER is not set")
 	}
 
