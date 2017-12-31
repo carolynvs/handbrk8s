@@ -135,9 +135,11 @@ func main() {
 
 // parseArgs reads and validates flags and environment variables.
 func parseArgs() (plexCfg cmd.PlexArgs, transcodedPath, rawPath string) {
-	flag.StringVar(&transcodedPath, "f", "", "transcoded video file to upload to Plex")
-	flag.StringVar(&rawPath, "raw", "", "original raw video file to cleanup")
-	plexCfg.Parse()
+	fs := flag.NewFlagSet("uploader", flag.ExitOnError)
+
+	fs.StringVar(&transcodedPath, "f", "", "transcoded video file to upload to Plex")
+	fs.StringVar(&rawPath, "raw", "", "original raw video file to cleanup")
+	plexCfg.Parse(fs)
 
 	cmd.ExitOnMissingFlag(transcodedPath, "-f")
 	cmd.ExitOnMissingFlag(rawPath, "-raw")

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"log"
 	"os"
 	"os/signal"
@@ -35,7 +36,8 @@ func main() {
 
 // parseArgs reads and validates flags and environment variables.
 func parseArgs() watcher.LibraryConfig {
+	fs := flag.NewFlagSet("watcher", flag.ExitOnError)
 	var args cmd.PlexArgs
-	args.Parse()
+	args.Parse(fs)
 	return args.LibraryConfig
 }

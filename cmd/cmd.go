@@ -20,13 +20,13 @@ type PlexArgs struct {
 }
 
 // Populate with Plex command-line arguments.
-func (args *PlexArgs) Parse() {
-	flag.StringVar(&args.Config.Server, "plex-server", "",
+func (args *PlexArgs) Parse(fs *flag.FlagSet) {
+	fs.StringVar(&args.Config.Server, "plex-server", "",
 		"Base URL of the Plex server, for example http://192.168.0.105:32400")
-	flag.StringVar(&args.Config.Token, "plex-token", os.Getenv("PLEX_TOKEN"), "Plex authentication token [PLEX_TOKEN]")
-	flag.StringVar(&args.Name, "plex-library", "", "Name of a Plex library")
-	flag.StringVar(&args.Share, "plex-share", "", "Location of to the Plex library share")
-	flag.Parse()
+	fs.StringVar(&args.Config.Token, "plex-token", os.Getenv("PLEX_TOKEN"), "Plex authentication token [PLEX_TOKEN]")
+	fs.StringVar(&args.Name, "plex-library", "", "Name of a Plex library")
+	fs.StringVar(&args.Share, "plex-share", "", "Location of to the Plex library share")
+	fs.Parse(os.Args[1:])
 
 	ExitOnMissingFlag(args.Config.Server, "-plex-server")
 	ExitOnMissingFlag(args.Config.Token, "-plex-token")
