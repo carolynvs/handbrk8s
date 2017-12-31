@@ -21,10 +21,9 @@ import (
 // 3. Remove the transcoded video file.
 // 4. Remove the original raw video file.
 func main() {
-	libCfg, transcodedPath, rawPath := parseArgs()
+	libCfg, transcodedPath, pathSuffix, rawPath := parseArgs()
 
-	filename := filepath.Base(transcodedPath)
-	uploadPath := filepath.Join(libCfg.Share, filename)
+	uploadPath := filepath.Join(libCfg.Share, pathSuffix)
 
 	// Determine if the file should be uploaded
 	shouldUpload := false
@@ -74,6 +73,7 @@ func main() {
 	cmd.ExitOnRuntimeError(err)
 
 	// Determine if the Plex library should be refreshed
+	filename := filepath.Base(pathSuffix)
 	if !shouldRefresh {
 		fmt.Println("checking for the video in the Plex library...")
 		exists, err := lib.HasVideo(filename)
@@ -134,15 +134,16 @@ func main() {
 }
 
 // parseArgs reads and validates flags and environment variables.
-func parseArgs() (plexCfg cmd.PlexArgs, transcodedPath, rawPath string) {
+func parseArgs() (plexCfg cmd.PlexArgs, transcodedPath, destinationSuffix, rawPath string) {
 	fs := flag.NewFlagSet("uploader", flag.ExitOnError)
 
 	fs.StringVar(&transcodedPath, "f", "", "transcoded video file to upload to Plex")
+	fs.StringVar(&destinationSuffix, "suffix", "", "relative path of the destination file")
 	fs.StringVar(&rawPath, "raw", "", "original raw video file to cleanup")
 	plexCfg.Parse(fs)
 
 	cmd.ExitOnMissingFlag(transcodedPath, "-f")
 	cmd.ExitOnMissingFlag(rawPath, "-raw")
 
-	return plexCfg, transcodedPath, rawPath
+	return plexCfg, transcodedPath, destinationSuffix, rawPath
 }

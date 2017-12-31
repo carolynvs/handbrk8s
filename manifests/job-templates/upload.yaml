@@ -24,6 +24,8 @@ spec:
         args:
         - "-f"
         - "{{.TranscodedFile}}"
+        - "--suffix"
+        - "{{.DestinationSuffix}}"
         - "--plex-server"
         - "{{.PlexServer}}"
         - "--plex-library"

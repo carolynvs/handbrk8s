@@ -118,14 +118,15 @@ func (w *VideoWatcher) Close() {
 }
 
 func (w *VideoWatcher) handleVideo(path string) {
+	pathSuffix := strings.Replace(path, w.WatchDir, "", 1)
+
 	// Ignore hidden files
-	filename := filepath.Base(path)
-	if strings.HasPrefix(".", filename) {
+	if strings.HasPrefix(".", pathSuffix) {
 		return
 	}
 
 	// Claim the file, prevents attempts to process it a second time
-	claimPath := filepath.Join(w.ClaimDir, filename)
+	claimPath := filepath.Join(w.ClaimDir, pathSuffix)
 	log.Printf("attempting to claim %s\n", claimPath)
 	err := fs.MoveFile(path, claimPath)
 	if err != nil {
@@ -134,7 +135,7 @@ func (w *VideoWatcher) handleVideo(path string) {
 		return
 	}
 
-	transcodedPath := filepath.Join(w.TranscodedDir, filename)
+	transcodedPath := filepath.Join(w.TranscodedDir, pathSuffix)
 	transcodeJobName, err := w.createTranscodeJob(claimPath, transcodedPath)
 	if err != nil {
 		log.Println(err)
@@ -155,8 +156,10 @@ func (w *VideoWatcher) handleVideo(path string) {
 }
 
 func (w *VideoWatcher) cleanupFailedClaim(claimPath string) {
+	pathSuffix := strings.Replace(claimPath, w.ClaimDir, "", 1)
+
 	log.Printf("cleaning up failed claim: %s\n", claimPath)
-	failedPath := filepath.Join(w.FailedDir, filepath.Base(claimPath))
+	failedPath := filepath.Join(w.FailedDir, pathSuffix)
 	err := fs.MoveFile(claimPath, failedPath)
 	if err != nil {
 		log.Println(errors.Wrap(err, "unable to cleanup failed claim"))

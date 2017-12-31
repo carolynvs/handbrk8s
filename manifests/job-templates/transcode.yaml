@@ -8,6 +8,13 @@ spec:
     metadata:
       name: {{.Name}}-transcode
     spec:
+      initContainers:
+      - name: prep
+        image: alpine:3.5
+        command: sh
+        args:
+        - "-c"
+        - "mkdir -p '{{.OutputDir}}'"
       containers:
       - name: handbrake
         image: carolynvs/handbrakecli:1.0.4

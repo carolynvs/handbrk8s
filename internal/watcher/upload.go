@@ -4,6 +4,7 @@ import (
 	"io/ioutil"
 	"log"
 	"path/filepath"
+	"strings"
 
 	"github.com/carolynvs/handbrk8s/internal/k8s/jobs"
 	"github.com/pkg/errors"
@@ -12,6 +13,7 @@ import (
 type uploadJobValues struct {
 	WaitForJob                    string
 	Name, TranscodedFile, RawFile string
+	DestinationSuffix             string
 	PlexServer, PlexToken         string
 	PlexLibrary, PlexShare        string
 }
@@ -28,14 +30,15 @@ func (w *VideoWatcher) createUploadJob(waitForJob, transcodedFile, rawFile strin
 
 	log.Printf("creating upload job for %s\n", filename)
 	values := uploadJobValues{
-		Name:           jobs.SanitizeJobName(filename),
-		WaitForJob:     waitForJob,
-		TranscodedFile: transcodedFile,
-		RawFile:        rawFile,
-		PlexServer:     w.DestLib.Config.Server,
-		PlexToken:      w.DestLib.Config.Token,
-		PlexLibrary:    w.DestLib.Name,
-		PlexShare:      w.DestLib.Share,
+		Name:              jobs.SanitizeJobName(filename),
+		WaitForJob:        waitForJob,
+		TranscodedFile:    transcodedFile,
+		RawFile:           rawFile,
+		DestinationSuffix: strings.Replace(transcodedFile, w.TranscodedDir, "", 1),
+		PlexServer:        w.DestLib.Config.Server,
+		PlexToken:         w.DestLib.Config.Token,
+		PlexLibrary:       w.DestLib.Name,
+		PlexShare:         w.DestLib.Share,
 	}
 	return jobs.CreateFromTemplate(string(template), values)
 }
