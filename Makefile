@@ -4,27 +4,27 @@ GOPATH ?= $(HOME)/go
 GOBIN := $(GOPATH)/bin
 DEP := $(GOBIN)/dep
 
-default: validate watcher jobchain uploader
+build: validate watcher jobchain uploader test
 
 $(DEP):
 	go get -u github.com/golang/dep/cmd/dep
 
 watcher:
-	cd ./cmd/watcher; CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build
+	cd ./cmd/watcher; CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -i
 	cd ./cmd/watcher; docker build -t carolynvs/handbrk8s-watcher .
 
 jobchain:
-	cd ./cmd/jobchain; CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build
+	cd ./cmd/jobchain; CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -i
 	cd ./cmd/jobchain; docker build -t carolynvs/jobchain .
 
 uploader:
-	cd ./cmd/uploader; CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build
+	cd ./cmd/uploader; CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -i
 	cd ./cmd/uploader; docker build -t carolynvs/handbrk8s-uploader .
 
 test:
 	go test ./...
 
-validate: $(DEP) test
+validate: $(DEP)
 	go fmt ./...
 	go vet ./...
 	dep status | grep -v "mismatch"
