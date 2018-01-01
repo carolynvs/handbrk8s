@@ -10,6 +10,9 @@ spec:
       labels:
         app: watcher
     spec:
+      securityContext: # hack because we mount a host volume, once we have polling, we should remove this
+        runAsUser: 999
+        fsGroup: 998
       containers:
       - name: watcher
         image: carolynvs/handbrk8s-watcher:latest
