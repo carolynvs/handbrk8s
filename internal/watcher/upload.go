@@ -38,7 +38,7 @@ func (w *VideoWatcher) createUploadJob(waitForJob, transcodedFile, rawFile, libr
 		PlexServer:        w.PlexCfg.URL,
 		PlexToken:         w.PlexCfg.Token,
 		PlexLibrary:       library,
-		PlexShare:         library, // Assume that the library name is the share path
+		PlexShare:         w.PlexCfg.Share, // Assume that the library name is the share path
 	}
 	return jobs.CreateFromTemplate(string(template), values)
 }

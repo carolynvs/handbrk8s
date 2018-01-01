@@ -17,7 +17,7 @@ spec:
         - "mkdir -p '{{.OutputDir}}'"
         volumeMounts:
         - mountPath: /work
-          name: cluster-movies
+          name: handbrk8s
       containers:
       - name: handbrake
         image: carolynvs/handbrakecli:1.0.4
@@ -35,14 +35,14 @@ spec:
         - "{{.Preset}}"
         volumeMounts:
         - mountPath: /work
-          name: cluster-movies
+          name: handbrk8s
         - name: handbrakecli-config
           mountPath: /config/ghb
       restartPolicy: OnFailure
       volumes:
-      - name: cluster-movies
+      - name: handbrk8s
         persistentVolumeClaim:
-          claimName: cluster-movies
+          claimName: handbrk8s
       - name: handbrakecli-config
         configMap:
           name: handbrakecli

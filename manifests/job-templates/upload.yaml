@@ -39,14 +39,14 @@ spec:
           value: {{.PlexToken}}
         volumeMounts:
         - mountPath: /work
-          name: cluster-movies
+          name: handbrk8s
         - mountPath: /plex
-          name: plex-movies
+          name: plex
       restartPolicy: OnFailure
       volumes:
-      - name: cluster-movies
+      - name: handbrk8s
         persistentVolumeClaim:
-          claimName: cluster-movies
-      - name: plex-movies
+          claimName: handbrk8s
+      - name: plex
         persistentVolumeClaim:
-          claimName: plex-movies
+          claimName: plex

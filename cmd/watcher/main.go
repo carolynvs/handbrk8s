@@ -49,5 +49,7 @@ func parseArgs() (plexCfg plex.LibraryConfig) {
 	cmd.ExitOnMissingFlag(plexCfg.URL, "-plex-server")
 	cmd.ExitOnMissingFlag(plexCfg.Token, "-plex-token")
 
+	plexCfg.Share = plexVolume
+
 	return plexCfg
 }
