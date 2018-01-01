@@ -4,7 +4,6 @@ import (
 	"io/ioutil"
 	"log"
 	"path/filepath"
-	"strings"
 
 	"github.com/carolynvs/handbrk8s/internal/k8s/jobs"
 	"github.com/pkg/errors"
@@ -19,7 +18,7 @@ type uploadJobValues struct {
 }
 
 // CreateUploadJob creates a job to upload a video to Plex
-func (w *VideoWatcher) createUploadJob(waitForJob, transcodedFile, rawFile, library string) (jobName string, err error) {
+func (w *VideoWatcher) createUploadJob(waitForJob, transcodedFile, rawFile, pathSuffix, library string) (jobName string, err error) {
 	templateFile := filepath.Join(w.TemplatesDir, "upload.yaml")
 	template, err := ioutil.ReadFile(templateFile)
 	if err != nil {
@@ -34,7 +33,7 @@ func (w *VideoWatcher) createUploadJob(waitForJob, transcodedFile, rawFile, libr
 		WaitForJob:        waitForJob,
 		TranscodedFile:    transcodedFile,
 		RawFile:           rawFile,
-		DestinationSuffix: strings.Replace(transcodedFile, w.TranscodedDir, "", 1),
+		DestinationSuffix: pathSuffix,
 		PlexServer:        w.PlexCfg.URL,
 		PlexToken:         w.PlexCfg.Token,
 		PlexLibrary:       library,

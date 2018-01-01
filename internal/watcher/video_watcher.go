@@ -111,17 +111,25 @@ func (w *VideoWatcher) Close() {
 }
 
 func (w *VideoWatcher) handleVideo(path string) {
-	pathSuffix := strings.Replace(path, w.WatchDir, "", 1)
-
 	// Ignore hidden files
-	if strings.HasPrefix(".", pathSuffix) {
+	if strings.HasPrefix(".", filepath.Base(path)) {
 		return
 	}
 
-	// Claim the file, prevents attempts to process it a second time
+	// Preserve the directory nesting of the video relative to the watch directory
+	// Example: /watch/Movies/Foo/bar.mkv -> Movies/Foo/bar.mkv
+	pathSuffix, err := filepath.Rel(w.WatchDir, path)
+	if err != nil {
+		log.Println(errors.Wrapf(err, "unable to determine path suffix of %s, skipping for now",
+			path, path))
+		return
+	}
+
+	// Claim the file by moving it out of the watch directory,
+	// prevents attempts to process it a second time
 	claimPath := filepath.Join(w.ClaimDir, pathSuffix)
-	log.Printf("attempting to claim %s\n", claimPath)
-	err := fs.MoveFile(path, claimPath)
+	log.Printf("attempting to claim %s\n", path)
+	err = fs.MoveFile(path, claimPath)
 	if err != nil {
 		log.Println(errors.Wrapf(err, "unable to move %s to %s, skipping for now",
 			path, claimPath))
@@ -136,10 +144,10 @@ func (w *VideoWatcher) handleVideo(path string) {
 		return
 	}
 
-	// Assume that the library is the first part of the path, e.g. /watch/LIBRARY/../video.mkv
-	library := filepath.SplitList(pathSuffix)[0]
+	// Assume that the library is the first segment of the path, e.g. /watch/LIBRARY/../video.mkv
+	library := strings.Split(pathSuffix, string(os.PathSeparator))[0]
 
-	_, err = w.createUploadJob(transcodeJobName, transcodedPath, claimPath, library)
+	_, err = w.createUploadJob(transcodeJobName, transcodedPath, claimPath, pathSuffix, library)
 	if err != nil {
 		log.Println(err)
 		err = jobs.Delete(transcodeJobName, namespace)
