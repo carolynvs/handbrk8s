@@ -55,10 +55,10 @@ func NewVideoWatcher(configVolume, watchVolume, workVolume string, videoPreset s
 
 	w := &VideoWatcher{
 		done:          make(chan struct{}),
-		WatchDir:      filepath.Join(watchVolume, "raw"),
-		FailedDir:     filepath.Join(watchVolume, "failed"),
-		ClaimDir:      filepath.Join(workVolume, "claimed"),
-		TranscodedDir: filepath.Join(workVolume, "transcoded"),
+		WatchDir:      filepath.Join(watchVolume, "watch"),
+		FailedDir:     filepath.Join(watchVolume, "fail"),
+		ClaimDir:      filepath.Join(workVolume, "claim"),
+		TranscodedDir: filepath.Join(workVolume, "work"),
 		TemplatesDir:  filepath.Join(configVolume, "templates"),
 		VideoPreset:   videoPreset,
 		PlexCfg:       plexCfg,
