@@ -44,15 +44,12 @@ func main() {
 }
 
 func parseFlags() (name, namespace string) {
-	flag.StringVar(&name, "name", "", "job to wait for")
-	flag.StringVar(&namespace, "namespace", "", "namespace of the job")
-	flag.Parse()
+	fs := flag.NewFlagSet("jobchain", flag.ExitOnError)
+	fs.StringVar(&name, "name", "", "job to wait for")
+	fs.StringVar(&namespace, "namespace", "", "namespace of the job")
+	fs.Parse(os.Args[1:])
 
-	if name == "" {
-		fmt.Println("Waits for a job to complete successfully")
-		fmt.Println("jobchain [-namespace] -name")
-		os.Exit(cmd.InvalidArgument)
-	}
+	cmd.ExitOnMissingFlag(name, "-name")
 
 	return name, namespace
 }

@@ -10,6 +10,9 @@ spec:
       labels:
         app: watcher
     spec:
+      securityContext: # hack because we mount a host volume, once we have polling, we should remove this
+        runAsUser: 999
+        fsGroup: 998
       containers:
       - name: watcher
         image: carolynvs/handbrk8s-watcher:latest
@@ -17,26 +20,22 @@ spec:
         args:
         - "--plex-server"
         - "http://deathstar:32400"
-        - "--plex-library"
-        - "Movies"
-        - "--plex-share"
-        - "/plex"
         env:
         - name: PLEX_TOKEN
           value: "Bpfj5wDaJGqcTBqDT8wJ"
         volumeMounts:
         - mountPath: /watch
-          name: ponyshare
+          name: handbrk8s
         - mountPath: /work
-          name: ponyshare
+          name: handbrk8s
         - mountPath: /config/templates
           name: job-templates
       nodeSelector:
         ponyshare: ""
       volumes:
-      - name: ponyshare
+      - name: handbrk8s
         hostPath:
-          path: /ponyshare/movies
+          path: /ponyshare/handbrk8s
       - name: job-templates
         configMap:
           name: job-templates

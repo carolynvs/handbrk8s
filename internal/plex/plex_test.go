@@ -7,13 +7,13 @@ import (
 
 func buildClient(t *testing.T) (c Client) {
 	c.Token = os.Getenv("PLEX_TOKEN")
-	c.Server = os.Getenv("PLEX_SERVER")
+	c.URL = os.Getenv("PLEX_SERVER")
 
 	if c.Token == "" {
 		t.Skip("skipping: PLEX_TOKEN is not set")
 	}
 
-	if c.Server == "" {
+	if c.URL == "" {
 		t.Skip("skipping: PLEX_SERVER is not set")
 	}
 
@@ -21,32 +21,70 @@ func buildClient(t *testing.T) (c Client) {
 }
 
 func TestClient_FindLibrary(t *testing.T) {
-	c := buildClient(t)
-	_, err := c.FindLibrary("Movies")
-	if err != nil {
-		t.Fatalf("%#v", err)
+	testcases := []struct {
+		Name        string
+		LibraryName string
+		WantType    MediaType
+	}{
+		{Name: "Movies", LibraryName: "Movies", WantType: Movie},
+		{Name: "TV Shows", LibraryName: "TV", WantType: Show},
+	}
+
+	for _, tc := range testcases {
+		t.Run(tc.Name, func(t *testing.T) {
+			t.Parallel()
+
+			c := buildClient(t)
+			lib, err := c.FindLibrary(tc.LibraryName)
+			if err != nil {
+				t.Fatalf("%+v", err)
+			}
+
+			if lib.Type != tc.WantType {
+				t.Fatalf("Library type was not deserialized, expected: %v, got: %v", tc.WantType, lib.Type)
+			}
+		})
 	}
 }
 
 func TestLibrary_List(t *testing.T) {
-	c := buildClient(t)
-	lib, err := c.FindLibrary("Movies")
-	if err != nil {
-		t.Fatalf("%#v", err)
+	testcases := []struct {
+		Name        string
+		LibraryName string
+		WantType    MediaType
+	}{
+		{Name: "Movies", LibraryName: "Movies", WantType: Movie},
+		{Name: "TV Shows", LibraryName: "TV", WantType: Episode},
 	}
 
-	videos, err := lib.List()
-	if err != nil {
-		t.Fatalf("%#v", err)
-	}
+	for _, tc := range testcases {
+		t.Run(tc.Name, func(t *testing.T) {
+			t.Parallel()
 
-	if len(videos) < 1 {
-		t.Fatal("expected a video in the library")
-	}
+			c := buildClient(t)
+			lib, err := c.FindLibrary(tc.LibraryName)
+			if err != nil {
+				t.Fatalf("%#v", err)
+			}
 
-	video := videos[0]
-	if video.Files[0].FileName() == "" {
-		t.Fatal("expected a video filename")
+			videos, err := lib.List()
+			if err != nil {
+				t.Fatalf("%#v", err)
+			}
+
+			if len(videos) < 1 {
+				t.Fatal("expected a video in the library")
+			}
+
+			video := videos[0]
+			if video.Files[0].FileName() == "" {
+				t.Fatal("expected a video filename")
+			}
+
+			if video.Type != tc.WantType {
+				t.Fatalf("Video type was not deserialized, expected: %v, got: %v", tc.WantType, video.Type)
+			}
+		})
 	}
 }
 

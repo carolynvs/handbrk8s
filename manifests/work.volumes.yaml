@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: PersistentVolume
 metadata:
-  name: cluster-movies
+  name: handbrk8s
   # volumes are global, and are not namespaced
 spec:
   capacity:
@@ -10,12 +10,12 @@ spec:
   - ReadWriteMany
   nfs:
     server: ponyshare
-    path: "/ponyshare/movies"
+    path: "/ponyshare/handbrk8s"
 ---
 kind: PersistentVolumeClaim
 apiVersion: v1
 metadata:
-  name: cluster-movies
+  name: handbrk8s
   namespace: handbrk8s
 spec:
   accessModes:

@@ -8,6 +8,16 @@ spec:
     metadata:
       name: {{.Name}}-transcode
     spec:
+      initContainers:
+      - name: prep
+        image: alpine:3.5
+        command: ["sh"]
+        args:
+        - "-xc"
+        - "mkdir -p '{{.OutputDir}}'"
+        volumeMounts:
+        - mountPath: /work
+          name: handbrk8s
       containers:
       - name: handbrake
         image: carolynvs/handbrakecli:1.0.4
@@ -25,14 +35,14 @@ spec:
         - "{{.Preset}}"
         volumeMounts:
         - mountPath: /work
-          name: cluster-movies
+          name: handbrk8s
         - name: handbrakecli-config
           mountPath: /config/ghb
       restartPolicy: OnFailure
       volumes:
-      - name: cluster-movies
+      - name: handbrk8s
         persistentVolumeClaim:
-          claimName: cluster-movies
+          claimName: handbrk8s
       - name: handbrakecli-config
         configMap:
           name: handbrakecli

@@ -35,19 +35,12 @@ type VideoWatcher struct {
 	// VideoPreset is the name of a HandBrake preset.
 	VideoPreset string
 
-	// DestLib contains connection information to the destination Plex library.
-	DestLib LibraryConfig
-}
-
-// LibraryConfig is the set of information necessary to upload videos to a Plex library.
-type LibraryConfig struct {
-	Config plex.Config
-	Name   string
-	Share  string
+	// PlexCfg contains connection information upload a file to a Plex server.
+	PlexCfg plex.LibraryConfig
 }
 
 // NewVideoWatcher begins watching for new videos to transcode.
-func NewVideoWatcher(configVolume, watchVolume, workVolume string, videoPreset string, destLib LibraryConfig) (*VideoWatcher, error) {
+func NewVideoWatcher(configVolume, watchVolume, workVolume string, videoPreset string, plexCfg plex.LibraryConfig) (*VideoWatcher, error) {
 	if _, err := os.Stat(configVolume); os.IsNotExist(err) {
 		return nil, errors.Errorf("config volume, %s, is not mounted", configVolume)
 	}
@@ -62,13 +55,13 @@ func NewVideoWatcher(configVolume, watchVolume, workVolume string, videoPreset s
 
 	w := &VideoWatcher{
 		done:          make(chan struct{}),
-		WatchDir:      filepath.Join(watchVolume, "raw"),
-		FailedDir:     filepath.Join(watchVolume, "failed"),
-		ClaimDir:      filepath.Join(workVolume, "claimed"),
-		TranscodedDir: filepath.Join(workVolume, "transcoded"),
+		WatchDir:      filepath.Join(watchVolume, "watch"),
+		FailedDir:     filepath.Join(watchVolume, "fail"),
+		ClaimDir:      filepath.Join(workVolume, "claim"),
+		TranscodedDir: filepath.Join(workVolume, "work"),
 		TemplatesDir:  filepath.Join(configVolume, "templates"),
 		VideoPreset:   videoPreset,
-		DestLib:       destLib,
+		PlexCfg:       plexCfg,
 	}
 
 	err := os.MkdirAll(w.WatchDir, 0755)
@@ -119,22 +112,31 @@ func (w *VideoWatcher) Close() {
 
 func (w *VideoWatcher) handleVideo(path string) {
 	// Ignore hidden files
-	filename := filepath.Base(path)
-	if strings.HasPrefix(".", filename) {
+	if strings.HasPrefix(".", filepath.Base(path)) {
 		return
 	}
 
-	// Claim the file, prevents attempts to process it a second time
-	claimPath := filepath.Join(w.ClaimDir, filename)
-	log.Printf("attempting to claim %s\n", claimPath)
-	err := fs.MoveFile(path, claimPath)
+	// Preserve the directory nesting of the video relative to the watch directory
+	// Example: /watch/Movies/Foo/bar.mkv -> Movies/Foo/bar.mkv
+	pathSuffix, err := filepath.Rel(w.WatchDir, path)
+	if err != nil {
+		log.Println(errors.Wrapf(err, "unable to determine path suffix of %s, skipping for now",
+			path, path))
+		return
+	}
+
+	// Claim the file by moving it out of the watch directory,
+	// prevents attempts to process it a second time
+	claimPath := filepath.Join(w.ClaimDir, pathSuffix)
+	log.Printf("attempting to claim %s\n", path)
+	err = fs.MoveFile(path, claimPath)
 	if err != nil {
 		log.Println(errors.Wrapf(err, "unable to move %s to %s, skipping for now",
 			path, claimPath))
 		return
 	}
 
-	transcodedPath := filepath.Join(w.TranscodedDir, filename)
+	transcodedPath := filepath.Join(w.TranscodedDir, pathSuffix)
 	transcodeJobName, err := w.createTranscodeJob(claimPath, transcodedPath)
 	if err != nil {
 		log.Println(err)
@@ -142,7 +144,10 @@ func (w *VideoWatcher) handleVideo(path string) {
 		return
 	}
 
-	_, err = w.createUploadJob(transcodeJobName, transcodedPath, claimPath)
+	// Assume that the library is the first segment of the path, e.g. /watch/LIBRARY/../video.mkv
+	library := strings.Split(pathSuffix, string(os.PathSeparator))[0]
+
+	_, err = w.createUploadJob(transcodeJobName, transcodedPath, claimPath, pathSuffix, library)
 	if err != nil {
 		log.Println(err)
 		err = jobs.Delete(transcodeJobName, namespace)
@@ -155,8 +160,10 @@ func (w *VideoWatcher) handleVideo(path string) {
 }
 
 func (w *VideoWatcher) cleanupFailedClaim(claimPath string) {
+	pathSuffix := strings.Replace(claimPath, w.ClaimDir, "", 1)
+
 	log.Printf("cleaning up failed claim: %s\n", claimPath)
-	failedPath := filepath.Join(w.FailedDir, filepath.Base(claimPath))
+	failedPath := filepath.Join(w.FailedDir, pathSuffix)
 	err := fs.MoveFile(claimPath, failedPath)
 	if err != nil {
 		log.Println(errors.Wrap(err, "unable to cleanup failed claim"))

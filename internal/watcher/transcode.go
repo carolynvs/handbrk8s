@@ -11,7 +11,7 @@ import (
 
 // TranscodeJobValues are the set of values to replace in transcodeJobYaml
 type transcodeJobValues struct {
-	Name, InputPath, OutputPath, Preset string
+	Name, InputPath, OutputDir, OutputPath, Preset string
 }
 
 // CreateTranscodeJob creates a job to transcode a video
@@ -28,6 +28,7 @@ func (w *VideoWatcher) createTranscodeJob(inputPath string, outputPath string) (
 	values := transcodeJobValues{
 		Name:       jobs.SanitizeJobName(filename),
 		InputPath:  inputPath,
+		OutputDir:  filepath.Dir(outputPath),
 		OutputPath: outputPath,
 		Preset:     w.VideoPreset,
 	}

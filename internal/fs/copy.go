@@ -3,6 +3,7 @@ package fs
 import (
 	"io"
 	"os"
+	"path/filepath"
 
 	"github.com/pkg/errors"
 )
@@ -20,6 +21,12 @@ func CopyFile(src, dest string) error {
 		return errors.Wrapf(err, "cannot open %s", src)
 	}
 	defer srcFile.Close()
+
+	destDir := filepath.Dir(dest)
+	err = os.MkdirAll(destDir, 0755)
+	if err != nil {
+		return err
+	}
 
 	destFile, err := os.Create(dest)
 	if err != nil {
