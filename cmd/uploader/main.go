@@ -73,10 +73,11 @@ func main() {
 	cmd.ExitOnRuntimeError(err)
 
 	// Determine if the Plex library should be refreshed
+	dirName := parentDir(pathSuffix)
 	filename := filepath.Base(pathSuffix)
 	if !shouldRefresh {
 		fmt.Println("checking for the video in the Plex library...")
-		exists, err := lib.HasVideo(filename)
+		exists, err := lib.HasVideo(dirName, filename)
 		cmd.ExitOnRuntimeError(err)
 		shouldRefresh = !exists
 	}
@@ -90,7 +91,7 @@ func main() {
 		exists := false
 		for i := 0; i < 3; i++ {
 			time.Sleep(1 * time.Second)
-			exists, err = lib.HasVideo(filename)
+			exists, err = lib.HasVideo(dirName, filename)
 			if err != nil {
 				continue
 			}
@@ -157,4 +158,8 @@ func parseArgs() (plexCfg plex.LibraryConfig, transcodedPath, destinationSuffix,
 	cmd.ExitOnMissingFlag(plexCfg.Share, "-plex-share")
 
 	return plexCfg, transcodedPath, destinationSuffix, rawPath
+}
+
+func parentDir(path string) string {
+	return filepath.Base(filepath.Dir(path))
 }

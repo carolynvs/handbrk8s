@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/url"
 	"path/filepath"
+	"strings"
 
 	"github.com/pkg/errors"
 )
@@ -76,9 +77,11 @@ const (
 )
 
 type Video struct {
-	Name  string      `xml:"title,attr"`
-	Type  MediaType   `xml:"type,attr"`
-	Files []VideoFile `xml:"Media>Part"`
+	Name   string      `xml:"title,attr"`
+	Key    string      `xml:"key,attr"`
+	Type   MediaType   `xml:"type,attr"`
+	Files  []VideoFile `xml:"Media>Part"`
+	Extras []VideoFile `xml:"Extras>Video>Media>Part"`
 }
 
 type VideoFile struct {
@@ -89,7 +92,12 @@ func (vf VideoFile) FileName() string {
 	return filepath.Base(vf.Path)
 }
 
+func (vf VideoFile) DirName() string {
+	return filepath.Base(filepath.Dir(vf.Path))
+}
+
 func (c Client) Get(format string, query map[string]string, result interface{}, a ...interface{}) error {
+	format = strings.TrimPrefix(format, "/")
 	baseUrl := fmt.Sprintf(c.URL+"/"+format, a...)
 	u, err := url.Parse(baseUrl)
 	if err != nil {
@@ -159,7 +167,26 @@ func (l Library) List() ([]Video, error) {
 	return result.Videos, nil
 }
 
-func (l Library) HasVideo(filename string) (bool, error) {
+// list library contents
+func (l Library) Details(file Video) (*Video, error) {
+	var result struct {
+		Videos []Video `xml:"Video"`
+	}
+
+	query := map[string]string{"includeExtras": "1"}
+	err := l.c.Get(file.Key, query, &result)
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to list videos in the %s library")
+	}
+
+	if len(result.Videos) > 0 {
+		return &result.Videos[0], nil
+	}
+
+	return nil, errors.New("Video Not Found")
+}
+
+func (l Library) HasVideo(dirName, filename string) (bool, error) {
 	videos, err := l.List()
 	if err != nil {
 		return false, err
@@ -170,8 +197,19 @@ func (l Library) HasVideo(filename string) (bool, error) {
 			if file.FileName() == filename {
 				return true, nil
 			}
-		}
 
+			if file.DirName() == dirName {
+				fullVideo, err := l.Details(video)
+				if err != nil {
+					return false, err
+				}
+				for _, extra := range fullVideo.Extras {
+					if extra.FileName() == filename {
+						return true, nil
+					}
+				}
+			}
+		}
 	}
 	return false, nil
 }

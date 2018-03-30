@@ -88,20 +88,37 @@ func TestLibrary_List(t *testing.T) {
 	}
 }
 
-func TestLibrary_HasVideo(t *testing.T) {
+func TestLibrary_HasMovie(t *testing.T) {
 	c := buildClient(t)
 	lib, err := c.FindLibrary("Movies")
 	if err != nil {
 		t.Fatalf("%#v", err)
 	}
 
-	ok, err := lib.HasVideo("THE_ANIMATRIX.mkv")
+	ok, err := lib.HasVideo("", "THE_ANIMATRIX.mkv")
 	if err != nil {
 		t.Fatalf("%#v", err)
 	}
 
 	if !ok {
 		t.Fatal("Expected the Movies library to contain the animatrix")
+	}
+}
+
+func TestLibrary_HasExtra(t *testing.T) {
+	c := buildClient(t)
+	lib, err := c.FindLibrary("Movies")
+	if err != nil {
+		t.Fatalf("%#v", err)
+	}
+
+	ok, err := lib.HasVideo("Hackers", "Hackers-trailer.mkv")
+	if err != nil {
+		t.Fatalf("%#v", err)
+	}
+
+	if !ok {
+		t.Fatal("Expected the Movies library to contain the Hackers trailer")
 	}
 }
 
