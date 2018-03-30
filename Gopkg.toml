@@ -15,13 +15,10 @@
   branch = "release-1.7"
 
 [[constraint]]
-  name = "k8s.io/apiserver"
-  branch = "release-1.7"
-
-#[[constraint]]
-#  name = "k8s.io/kubernetes"
-#  branch = "release-1.7"
-
-[[constraint]]
   branch = "master"
   name = "github.com/dustin/go-humanize"
+
+[prune]
+  unused-packages = true
+  non-go = true
+  go-tests = true
