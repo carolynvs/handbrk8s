@@ -10,7 +10,7 @@ spec:
   - ReadWriteMany
   nfs:
     server: deathstar
-    path: "/Multimedia"
+    path: "/Plex"
 ---
 kind: PersistentVolumeClaim
 apiVersion: v1
