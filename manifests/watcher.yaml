@@ -1,10 +1,13 @@
-apiVersion: apps/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: watcher
   namespace: handbrk8s
 spec:
   replicas: 1
+  selector:
+    matchLabels:
+      app: watcher
   template:
     metadata:
       labels:
