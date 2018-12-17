@@ -4,6 +4,7 @@ metadata:
   name: {{.Name}}-upload
   namespace: handbrk8s
 spec:
+  backoffLimit: 100
   template:
     metadata:
       name: {{.Name}}-upload

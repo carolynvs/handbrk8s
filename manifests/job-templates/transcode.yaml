@@ -4,6 +4,7 @@ metadata:
   name: {{.Name}}-transcode
   namespace: handbrk8s
 spec:
+  backoffLimit: 20
   template:
     metadata:
       name: {{.Name}}-transcode
