@@ -121,7 +121,7 @@ func (w *VideoWatcher) handleVideo(path string) {
 	pathSuffix, err := filepath.Rel(w.WatchDir, path)
 	if err != nil {
 		log.Println(errors.Wrapf(err, "unable to determine path suffix of %s, skipping for now",
-			path, path))
+			path))
 		return
 	}
 

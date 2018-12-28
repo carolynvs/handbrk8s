@@ -7,13 +7,13 @@ import (
 
 	"github.com/carolynvs/handbrk8s/internal/k8s/api"
 	"github.com/pkg/errors"
+	batchv1 "k8s.io/api/batch/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	_ "k8s.io/client-go/pkg/apis/batch/install"
-	batchv1 "k8s.io/client-go/pkg/apis/batch/v1"
 )
 
 // SanitizeJobName replaces characters that aren't allowed in a k8s name with dashes.
 func SanitizeJobName(name string) string {
+
 	name = strings.ToLower(name)
 	re := regexp.MustCompile(`[^a-z0-9-]`)
 	return re.ReplaceAllString(name, "-")
@@ -26,7 +26,7 @@ func Delete(name, namespace string) error {
 	if err != nil {
 		return err
 	}
-	jobclient := clusterClient.BatchV1Client.Jobs(namespace)
+	jobclient := clusterClient.BatchV1().Jobs(namespace)
 
 	err = jobclient.Delete(name, nil)
 	if !apierrors.IsNotFound(err) {
@@ -52,7 +52,7 @@ func CreateOrReplace(j *batchv1.Job) (jobName string, err error) {
 	if err != nil {
 		return "", err
 	}
-	jobclient := clusterClient.BatchV1Client.Jobs(j.Namespace)
+	jobclient := clusterClient.BatchV1().Jobs(j.Namespace)
 
 	result, err := jobclient.Create(j)
 	if apierrors.IsAlreadyExists(err) {

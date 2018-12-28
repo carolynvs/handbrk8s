@@ -39,7 +39,7 @@ func CopyFile(src, dest string) error {
 		return errors.Wrapf(err, "unable to copy %s to %s", src, dest)
 	}
 	if written != srcSize {
-		return errors.Wrapf(err, "copied the wrong number of bytes (%s instead of %s) from %s to %s",
+		return errors.Wrapf(err, "copied the wrong number of bytes (%v instead of %v) from %v to %v",
 			written, srcSize, src, dest)
 	}
 
