@@ -7,8 +7,7 @@ import (
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer/json"
-	"k8s.io/client-go/pkg/api"
-	_ "k8s.io/client-go/pkg/api/install"
+	"k8s.io/client-go/kubernetes/scheme"
 )
 
 // ProcessTemplate substitutes the supplied values into a yaml template.
@@ -29,7 +28,7 @@ func ProcessTemplate(yamlTemplate string, values interface{}) (yaml []byte, err 
 
 // DeserializeObject reads a k8s object from yaml.
 func DeserializeObject(yaml []byte) (runtime.Object, error) {
-	serializer := api.Codecs.UniversalDeserializer()
+	serializer := scheme.Codecs.UniversalDeserializer()
 
 	obj, _, err := serializer.Decode(yaml, nil, nil)
 	if err != nil {

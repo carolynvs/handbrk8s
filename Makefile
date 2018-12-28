@@ -45,7 +45,7 @@ init:
 
 config:
 	# HACK: https://github.com/kubernetes/kubernetes/issues/30558
-	kubectl create configmap handbrakecli -n handbrk8s--dry-run -o yaml --from-file=cmd/handbrakecli/presets.json \
+	kubectl create configmap handbrakecli -n handbrk8s --dry-run -o yaml --from-file=cmd/handbrakecli/presets.json \
 	  | kubectl replace -f -
 	kubectl create configmap job-templates -n handbrk8s --dry-run -o yaml --from-file=manifests/job-templates/ \
 	  | kubectl replace -f -

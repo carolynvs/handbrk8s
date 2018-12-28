@@ -5,11 +5,10 @@ import (
 
 	"github.com/carolynvs/handbrk8s/internal/k8s/api"
 	"github.com/pkg/errors"
+	batchv1 "k8s.io/api/batch/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	watchapi "k8s.io/apimachinery/pkg/watch"
-	k8sapi "k8s.io/client-go/pkg/api"
-	batchv1 "k8s.io/client-go/pkg/apis/batch/v1"
 )
 
 func WaitUntilComplete(done <-chan struct{}, namespace, name string) (<-chan *batchv1.Job, <-chan error) {
@@ -26,10 +25,10 @@ func WaitUntilComplete(done <-chan struct{}, namespace, name string) (<-chan *ba
 			return
 		}
 
-		jobclient := clusterClient.BatchV1Client.Jobs(namespace)
+		jobclient := clusterClient.BatchV1().Jobs(namespace)
 
 		opts := metav1.ListOptions{
-			FieldSelector: fields.OneTermEqualSelector(k8sapi.ObjectNameField, name).String(),
+			FieldSelector: fields.OneTermEqualSelector("metadata.name", name).String(),
 		}
 		watch, err := jobclient.Watch(opts)
 		if err != nil {
@@ -73,10 +72,10 @@ func WaitUntilDeleted(done <-chan struct{}, namespace, name string) <-chan error
 			return
 		}
 
-		jobclient := clusterClient.BatchV1Client.Jobs(namespace)
+		jobclient := clusterClient.BatchV1().Jobs(namespace)
 
 		opts := metav1.ListOptions{
-			FieldSelector: fields.OneTermEqualSelector(k8sapi.ObjectNameField, name).String(),
+			FieldSelector: fields.OneTermEqualSelector("metadata.name", name).String(),
 		}
 		watch, err := jobclient.Watch(opts)
 		if err != nil {
