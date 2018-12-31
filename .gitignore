@@ -1,6 +1,8 @@
 /watcher
 /jobchain
 /uploader
+/dashboard
 /cmd/watcher/watcher
 /cmd/jobchain/jobchain
 /cmd/uploader/uploader
+/cmd/dashboard/dashboard

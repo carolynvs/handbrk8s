@@ -4,7 +4,7 @@ GOPATH ?= $(HOME)/go
 GOBIN := $(GOPATH)/bin
 DEP := $(GOBIN)/dep
 
-build: validate watcher jobchain uploader test
+build: validate watcher jobchain uploader dashboard test
 
 $(DEP):
 	go get -u github.com/golang/dep/cmd/dep
@@ -12,6 +12,10 @@ $(DEP):
 watcher:
 	cd ./cmd/watcher; CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build
 	cd ./cmd/watcher; docker build -t carolynvs/handbrk8s-watcher .
+
+dashboard:
+	cd ./cmd/dashboard; CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build
+	cd ./cmd/dashboard; docker build -t carolynvs/handbrk8s-dashboard .
 
 jobchain:
 	cd ./cmd/jobchain; CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build
@@ -31,6 +35,7 @@ validate: $(DEP)
 
 publish:
 	docker push carolynvs/handbrk8s-watcher
+	docker push carolynvs/handbrk8s-dashboard
 	docker push carolynvs/jobchain
 	docker push carolynvs/handbrk8s-uploader
 
@@ -41,7 +46,8 @@ init:
 	kubectl apply -f manifests/rbac.yaml
 	kubectl create configmap handbrakecli -n handbrk8s --from-file=cmd/handbrakecli/presets.json
 	kubectl create configmap job-templates -n handbrk8s --from-file=manifests/job-templates/
-	kubectl create -f manifests/watcher.yaml
+	kubectl apply -f manifests/watcher.yaml
+	kubectl apply -f manifests/dashboard.yaml
 
 config:
 	# HACK: https://github.com/kubernetes/kubernetes/issues/30558
@@ -53,9 +59,16 @@ config:
 deploy: config
 	# HACK: force the container to be recreated with the latest image
 	-kubectl delete -f manifests/watcher.yaml
-	kubectl create -f manifests/watcher.yaml
+	-kubectl delete -f manifests/dashboard.yaml
+	kubectl apply -f manifests/watcher.yaml
+	kubectl apply -f manifests/dashboard.yaml
 
-tail:
-	kubectl logs -f deploy/watcher
+local-dashboard:
+	open http://localhost
+	KUBECONFIG=~/.kube/config go run ./cmd/dashboard/main.go
 
-.PHONY: watcher uploader jobchain test validate deploy publish tail
+open-dashboard:
+	open http://localhost:8080
+	kubectl port-forward svc/dashboard 8080:8080
+
+.PHONY: watcher uploader jobchain dashboard test validate deploy publish open-dashboard local-dashboard

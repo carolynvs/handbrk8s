@@ -333,7 +333,7 @@
   version = "kubernetes-1.12.4"
 
 [[projects]]
-  digest = "1:afa466782df54974a9e0387c8d59d44245a46a2310eda26fb1812df14a4c204a"
+  digest = "1:3b5b7622d385891eeac9eaf3151ea57d38cff4f05c57d6ad94134f346f7f8099"
   name = "k8s.io/client-go"
   packages = [
     "discovery",
@@ -377,7 +377,10 @@
     "plugin/pkg/client/auth/exec",
     "rest",
     "rest/watch",
+    "tools/clientcmd",
     "tools/clientcmd/api",
+    "tools/clientcmd/api/latest",
+    "tools/clientcmd/api/v1",
     "tools/metrics",
     "tools/reference",
     "transport",
@@ -402,11 +405,12 @@
     "k8s.io/apimachinery/pkg/apis/meta/v1",
     "k8s.io/apimachinery/pkg/fields",
     "k8s.io/apimachinery/pkg/runtime",
-    "k8s.io/apimachinery/pkg/runtime/serializer",
     "k8s.io/apimachinery/pkg/runtime/serializer/json",
     "k8s.io/apimachinery/pkg/watch",
     "k8s.io/client-go/kubernetes",
+    "k8s.io/client-go/kubernetes/scheme",
     "k8s.io/client-go/rest",
+    "k8s.io/client-go/tools/clientcmd",
   ]
   solver-name = "gps-cdcl"
   solver-version = 1

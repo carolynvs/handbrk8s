@@ -13,7 +13,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-const namespace = "handbrk8s"
+const Namespace = "handbrk8s"
 
 type VideoWatcher struct {
 	done chan struct{}
@@ -150,7 +150,7 @@ func (w *VideoWatcher) handleVideo(path string) {
 	_, err = w.createUploadJob(transcodeJobName, transcodedPath, claimPath, pathSuffix, library)
 	if err != nil {
 		log.Println(err)
-		err = jobs.Delete(transcodeJobName, namespace)
+		err = jobs.Delete(transcodeJobName, Namespace)
 		if err != nil {
 			log.Println(err)
 		}

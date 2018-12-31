@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dashboard
+  namespace: handbrk8s
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: dashboard
+  template:
+    metadata:
+      labels:
+        app: dashboard
+    spec:
+      containers:
+      - name: dashboard
+        image: carolynvs/handbrk8s-dashboard:latest
+        imagePullPolicy: Always
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dashboard
+  namespace: handbrk8s
+spec:
+  selector:
+    app: dashboard
+  ports:
+    - protocol: TCP
+      port: 8080
+      targetPort: 80
