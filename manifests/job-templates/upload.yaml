@@ -43,7 +43,7 @@ spec:
           name: handbrk8s
         - mountPath: /plex
           name: plex
-      restartPolicy: OnFailure
+      restartPolicy: Never
       volumes:
       - name: handbrk8s
         persistentVolumeClaim:

@@ -39,7 +39,7 @@ spec:
           name: handbrk8s
         - name: handbrakecli-config
           mountPath: /config/ghb
-      restartPolicy: OnFailure
+      restartPolicy: Never
       volumes:
       - name: handbrk8s
         persistentVolumeClaim:
