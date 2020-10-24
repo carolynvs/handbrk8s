@@ -8,6 +8,8 @@ spec:
   template:
     metadata:
       name: {{.Name}}-transcode
+      labels:
+        job-type: transcode
     spec:
       initContainers:
       - name: prep

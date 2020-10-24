@@ -8,6 +8,8 @@ spec:
   template:
     metadata:
       name: {{.Name}}-upload
+      labels:
+        job-type: upload
     spec:
       initContainers:
       - name: jobchain
@@ -35,9 +37,9 @@ spec:
         - "{{.PlexShare}}"
         - "--raw"
         - "{{.RawFile}}"
-        env:
-        - name: PLEX_TOKEN
-          value: {{.PlexToken}}
+        envFrom:
+        - secretRef:
+            name: plex-secret
         volumeMounts:
         - mountPath: /work
           name: handbrk8s
