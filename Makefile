@@ -2,12 +2,8 @@
 
 GOPATH ?= $(HOME)/go
 GOBIN := $(GOPATH)/bin
-DEP := $(GOBIN)/dep
 
 build: validate watcher jobchain uploader dashboard test
-
-$(DEP):
-	go get -u github.com/golang/dep/cmd/dep
 
 watcher:
 	cd ./cmd/watcher; CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build
@@ -28,10 +24,9 @@ uploader:
 test:
 	go test ./...
 
-validate: $(DEP)
+validate:
 	go fmt ./...
 	go vet ./...
-	dep status | grep -v "mismatch"
 
 publish:
 	docker push carolynvs/handbrk8s-watcher
