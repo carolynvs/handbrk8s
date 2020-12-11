@@ -2,6 +2,7 @@ package dashboard
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"html/template"
 	"net/http"
@@ -35,7 +36,7 @@ func Serve() error {
 		return err
 	}
 
-	jobs, err := client.BatchV1().Jobs(watcher.Namespace).List(metav1.ListOptions{})
+	jobs, err := client.BatchV1().Jobs(watcher.Namespace).List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
 		return err
 	}

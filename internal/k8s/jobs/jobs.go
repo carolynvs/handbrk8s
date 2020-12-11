@@ -1,6 +1,7 @@
 package jobs
 
 import (
+	"context"
 	"log"
 	"regexp"
 	"strings"
@@ -9,6 +10,7 @@ import (
 	"github.com/pkg/errors"
 	batchv1 "k8s.io/api/batch/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // SanitizeJobName replaces characters that aren't allowed in a k8s name with dashes.
@@ -28,7 +30,7 @@ func Delete(name, namespace string) error {
 	}
 	jobclient := clusterClient.BatchV1().Jobs(namespace)
 
-	err = jobclient.Delete(name, nil)
+	err = jobclient.Delete(context.TODO(), name, v1.DeleteOptions{})
 	if !apierrors.IsNotFound(err) {
 		return errors.Wrapf(err, "unable to delete %s/%s", namespace, name)
 	}
@@ -54,7 +56,7 @@ func CreateOrReplace(j *batchv1.Job) (jobName string, err error) {
 	}
 	jobclient := clusterClient.BatchV1().Jobs(j.Namespace)
 
-	result, err := jobclient.Create(j)
+	result, err := jobclient.Create(context.TODO(), j, v1.CreateOptions{})
 	if apierrors.IsAlreadyExists(err) {
 		delerr := Delete(j.Name, j.Namespace)
 		if delerr != nil {

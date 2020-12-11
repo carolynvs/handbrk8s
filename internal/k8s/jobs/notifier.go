@@ -1,6 +1,7 @@
 package jobs
 
 import (
+	"context"
 	"log"
 
 	"github.com/carolynvs/handbrk8s/internal/k8s/api"
@@ -30,7 +31,7 @@ func WaitUntilComplete(done <-chan struct{}, namespace, name string) (<-chan *ba
 		opts := metav1.ListOptions{
 			FieldSelector: fields.OneTermEqualSelector("metadata.name", name).String(),
 		}
-		watch, err := jobclient.Watch(opts)
+		watch, err := jobclient.Watch(context.TODO(), opts)
 		if err != nil {
 			errChan <- errors.Wrapf(err, "Unable to watch %v:jobs for %#v", namespace, opts)
 			return
@@ -77,7 +78,7 @@ func WaitUntilDeleted(done <-chan struct{}, namespace, name string) <-chan error
 		opts := metav1.ListOptions{
 			FieldSelector: fields.OneTermEqualSelector("metadata.name", name).String(),
 		}
-		watch, err := jobclient.Watch(opts)
+		watch, err := jobclient.Watch(context.TODO(), opts)
 		if err != nil {
 			errChan <- errors.Wrapf(err, "Unable to watch %v:jobs for %#v", namespace, opts)
 			return
