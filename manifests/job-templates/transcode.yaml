@@ -1,13 +1,16 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: {{.Name}}-transcode
+  name: "{{.Name}}-transcode"
   namespace: handbrk8s
 spec:
   backoffLimit: 20
   template:
     metadata:
-      name: {{.Name}}-transcode
+      name: "{{.Name}}-transcode"
+      labels:
+        job-type: transcode
+        video: "{{.Name}}"
     spec:
       initContainers:
       - name: prep

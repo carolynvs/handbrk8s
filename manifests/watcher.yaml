@@ -23,9 +23,9 @@ spec:
         args:
         - "--plex-server"
         - "http://deathstar:32400"
-        env:
-        - name: PLEX_TOKEN
-          value: "Bpfj5wDaJGqcTBqDT8wJ"
+        envFrom:
+        - secretRef:
+            name: plex-secret
         volumeMounts:
         - mountPath: /watch
           name: handbrk8s

@@ -46,6 +46,7 @@ init:
 	kubectl apply -f manifests/rbac.yaml
 	kubectl create configmap handbrakecli -n handbrk8s --from-file=cmd/handbrakecli/presets.json
 	kubectl create configmap job-templates -n handbrk8s --from-file=manifests/job-templates/
+	kubectl apply -f manifests/watcher-secret.yaml
 	kubectl apply -f manifests/watcher.yaml
 	kubectl apply -f manifests/dashboard.yaml
 
@@ -55,6 +56,7 @@ config:
 	  | kubectl replace -f -
 	kubectl create configmap job-templates -n handbrk8s --dry-run -o yaml --from-file=manifests/job-templates/ \
 	  | kubectl replace -f -
+	kubectl apply -f manifests/plex.secrets.yaml
 
 deploy: config
 	# HACK: force the container to be recreated with the latest image

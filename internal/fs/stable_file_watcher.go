@@ -4,6 +4,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"sync"
 	"time"
 
 	"github.com/fsnotify/fsnotify"
@@ -16,7 +17,7 @@ type StableFileWatcher struct {
 	watchDir      string
 	dirWatcher    *fsnotify.Watcher
 	done          chan struct{}
-	unstableFiles map[string]struct{}
+	unstableFiles sync.Map
 
 	// StableThreshold is the duration that a file must not change
 	// before a signaling an event for the file.
@@ -38,7 +39,6 @@ func NewStableFileWatcher(watchDir string, stableThreshold time.Duration) (*Stab
 	w := &StableFileWatcher{
 		watchDir:        watchDir,
 		done:            make(chan struct{}),
-		unstableFiles:   make(map[string]struct{}),
 		StableThreshold: stableThreshold,
 		Events:          make(chan FileEvent),
 	}
@@ -97,7 +97,7 @@ func (w *StableFileWatcher) start(existingFiles []string) {
 			if err != nil {
 				// Attempt to stop watching a deleted directory or file
 				w.dirWatcher.Remove(e.Name)
-				delete(w.unstableFiles, e.Name)
+				w.unstableFiles.Delete(e.Name)
 				continue
 			}
 
@@ -119,7 +119,7 @@ func (w *StableFileWatcher) Close() {
 // waitUntilFileIsStable waits until the file doesn't change for a set amount of
 // time. This prevents acting on a file that is still copying, being written.
 func (w *StableFileWatcher) waitUntilFileIsStable(path string) {
-	if _, ok := w.unstableFiles[path]; ok {
+	if _, ok := w.unstableFiles.Load(path); ok {
 		return
 	}
 
@@ -134,7 +134,7 @@ func (w *StableFileWatcher) waitUntilFileIsStable(path string) {
 		log.Println(errors.Wrapf(err, "unable to watch %s, skipping", path))
 		return
 	}
-	w.unstableFiles[path] = struct{}{}
+	w.unstableFiles.LoadOrStore(path, struct{}{})
 
 	timer := time.NewTimer(w.StableThreshold)
 	defer timer.Stop()
@@ -142,7 +142,7 @@ func (w *StableFileWatcher) waitUntilFileIsStable(path string) {
 	for {
 		select {
 		case <-w.done:
-			delete(w.unstableFiles, path)
+			w.unstableFiles.Delete(path)
 			return
 		case <-fw.Events:
 			// Start the wait over again, the file was changed
@@ -151,7 +151,7 @@ func (w *StableFileWatcher) waitUntilFileIsStable(path string) {
 			}
 			timer.Reset(w.StableThreshold)
 		case <-timer.C:
-			delete(w.unstableFiles, path)
+			w.unstableFiles.Delete(path)
 			// Make sure the file is still present
 			_, err := os.Stat(path)
 			if err != nil {

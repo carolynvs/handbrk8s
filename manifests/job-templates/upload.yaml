@@ -1,13 +1,16 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: {{.Name}}-upload
+  name: "{{.Name}}-upload"
   namespace: handbrk8s
 spec:
   backoffLimit: 100
   template:
     metadata:
-      name: {{.Name}}-upload
+      name: "{{.Name}}-upload"
+      labels:
+        job-type: upload
+        video: "{{.Name}}"
     spec:
       initContainers:
       - name: jobchain
@@ -35,9 +38,9 @@ spec:
         - "{{.PlexShare}}"
         - "--raw"
         - "{{.RawFile}}"
-        env:
-        - name: PLEX_TOKEN
-          value: {{.PlexToken}}
+        envFrom:
+        - secretRef:
+            name: plex-secret
         volumeMounts:
         - mountPath: /work
           name: handbrk8s
