@@ -10,15 +10,15 @@ watcher:
 	cd ./cmd/watcher; docker build -t carolynvs/handbrk8s-watcher .
 
 dashboard:
-	cd ./cmd/dashboard; CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build
+	cd ./cmd/dashboard; CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a
 	cd ./cmd/dashboard; docker build -t carolynvs/handbrk8s-dashboard .
 
 jobchain:
-	cd ./cmd/jobchain; CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build
+	cd ./cmd/jobchain; CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a
 	cd ./cmd/jobchain; docker build -t carolynvs/jobchain .
 
 uploader:
-	cd ./cmd/uploader; CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build
+	cd ./cmd/uploader; CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a
 	cd ./cmd/uploader; docker build -t carolynvs/handbrk8s-uploader .
 
 test:
@@ -30,9 +30,9 @@ validate:
 
 publish:
 	docker push carolynvs/handbrk8s-watcher
-	docker push carolynvs/handbrk8s-dashboard
-	docker push carolynvs/jobchain
-	docker push carolynvs/handbrk8s-uploader
+	#docker push carolynvs/handbrk8s-dashboard
+	#docker push carolynvs/jobchain
+	#docker push carolynvs/handbrk8s-uploader
 
 init:
 	kubectl apply -f manifests/namespace.yaml
@@ -41,15 +41,15 @@ init:
 	kubectl apply -f manifests/rbac.yaml
 	kubectl create configmap handbrakecli -n handbrk8s --from-file=cmd/handbrakecli/presets.json
 	kubectl create configmap job-templates -n handbrk8s --from-file=manifests/job-templates/
-	kubectl apply -f manifests/watcher-secret.yaml
+	kubectl apply -f manifests/plex.secrets.yamls
 	kubectl apply -f manifests/watcher.yaml
 	kubectl apply -f manifests/dashboard.yaml
 
 config:
 	# HACK: https://github.com/kubernetes/kubernetes/issues/30558
-	kubectl create configmap handbrakecli -n handbrk8s --dry-run -o yaml --from-file=cmd/handbrakecli/presets.json \
+	kubectl create configmap handbrakecli -n handbrk8s --dry-run=client -o yaml --from-file=cmd/handbrakecli/presets.json \
 	  | kubectl replace -f -
-	kubectl create configmap job-templates -n handbrk8s --dry-run -o yaml --from-file=manifests/job-templates/ \
+	kubectl create configmap job-templates -n handbrk8s --dry-run=client -o yaml --from-file=manifests/job-templates/ \
 	  | kubectl replace -f -
 	kubectl apply -f manifests/plex.secrets.yaml
 

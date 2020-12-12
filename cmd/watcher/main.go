@@ -19,7 +19,6 @@ var videoPreset = "tivo"
 
 func main() {
 	plexCfg := parseArgs()
-
 	w, err := watcher.NewVideoWatcher(configVolume, watchVolume, workVolume, videoPreset, plexCfg)
 	if err != nil {
 		cmd.ExitOnRuntimeError(err)

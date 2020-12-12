@@ -33,12 +33,10 @@ spec:
           name: handbrk8s
         - mountPath: /config/templates
           name: job-templates
-      nodeSelector:
-        ponyshare: ""
       volumes:
       - name: handbrk8s
-        hostPath:
-          path: /ponyshare/handbrk8s
+        persistentVolumeClaim:
+          claimName: handbrk8s
       - name: job-templates
         configMap:
           name: job-templates
