@@ -42,15 +42,15 @@ spec:
         - secretRef:
             name: plex-secret
         volumeMounts:
-        - mountPath: /work
-          name: handbrk8s
+        - mountPath: /ponyshare
+          name: ponyshare
         - mountPath: /plex
           name: plex
       restartPolicy: Never
       volumes:
-      - name: handbrk8s
+      - name: ponyshare
         persistentVolumeClaim:
-          claimName: handbrk8s
+          claimName: ponyshare
       - name: plex
         persistentVolumeClaim:
           claimName: plex

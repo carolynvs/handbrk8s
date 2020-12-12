@@ -3,9 +3,6 @@ github.com/davecgh/go-spew/spew
 # github.com/dustin/go-humanize v0.0.0-20170828050815-79e699ccd02f
 ## explicit
 github.com/dustin/go-humanize
-# github.com/fsnotify/fsnotify v1.4.9
-## explicit
-github.com/fsnotify/fsnotify
 # github.com/go-logr/logr v0.2.0
 github.com/go-logr/logr
 # github.com/gogo/protobuf v1.3.1
@@ -35,6 +32,9 @@ github.com/modern-go/reflect2
 # github.com/pkg/errors v0.9.1
 ## explicit
 github.com/pkg/errors
+# github.com/radovskyb/watcher v1.0.7
+## explicit
+github.com/radovskyb/watcher
 # github.com/spf13/pflag v1.0.5
 github.com/spf13/pflag
 # golang.org/x/crypto v0.0.0-20200622213623-75b288015ac9

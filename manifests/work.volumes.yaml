@@ -1,21 +1,20 @@
 apiVersion: v1
 kind: PersistentVolume
 metadata:
-  name: handbrk8s
+  name: ponyshare
   # volumes are global, and are not namespaced
 spec:
   capacity:
     storage: 500Gi
   accessModes:
   - ReadWriteMany
-  nfs:
-    server: ponyshare
-    path: "/ponyshare/handbrk8s"
+  hostPath:
+    path: "/ponyshare"
 ---
 kind: PersistentVolumeClaim
 apiVersion: v1
 metadata:
-  name: handbrk8s
+  name: ponyshare
   namespace: handbrk8s
 spec:
   accessModes:

@@ -22,23 +22,21 @@ spec:
         imagePullPolicy: Always
         args:
         - "--plex-server"
-        - "http://deathstar:32400"
+        - "https://192.168.0.103:32400"
+        - "--shared-volume"
+        - "/ponyshare/handbrk8s"
         envFrom:
         - secretRef:
             name: plex-secret
         volumeMounts:
-        - mountPath: /watch
-          name: handbrk8s
-        - mountPath: /work
-          name: handbrk8s
+        - mountPath: /ponyshare
+          name: ponyshare
         - mountPath: /config/templates
           name: job-templates
-      nodeSelector:
-        ponyshare: ""
       volumes:
-      - name: handbrk8s
-        hostPath:
-          path: /ponyshare/handbrk8s
+      - name: ponyshare
+        persistentVolumeClaim:
+          claimName: ponyshare
       - name: job-templates
         configMap:
           name: job-templates

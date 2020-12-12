@@ -20,8 +20,8 @@ spec:
         - "-xc"
         - "mkdir -p '{{.OutputDir}}'"
         volumeMounts:
-        - mountPath: /work
-          name: handbrk8s
+        - mountPath: /ponyshare
+          name: ponyshare
       containers:
       - name: handbrake
         image: carolynvs/handbrakecli:1.2.0
@@ -38,15 +38,15 @@ spec:
         - "--preset"
         - "{{.Preset}}"
         volumeMounts:
-        - mountPath: /work
-          name: handbrk8s
+        - mountPath: /ponyshare
+          name: ponyshare
         - name: handbrakecli-config
           mountPath: /config/ghb
       restartPolicy: Never
       volumes:
-      - name: handbrk8s
+      - name: ponyshare
         persistentVolumeClaim:
-          claimName: handbrk8s
+          claimName: ponyshare
       - name: handbrakecli-config
         configMap:
           name: handbrakecli

@@ -6,3 +6,4 @@
 /cmd/jobchain/jobchain
 /cmd/uploader/uploader
 /cmd/dashboard/dashboard
+PLEX_TOKEN.txt

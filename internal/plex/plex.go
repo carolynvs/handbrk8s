@@ -1,6 +1,7 @@
 package plex
 
 import (
+	"crypto/tls"
 	"encoding/xml"
 	"fmt"
 	"log"
@@ -30,6 +31,7 @@ type Client struct {
 }
 
 func NewClient(cfg ServerConfig) Client {
+	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 	return Client{ServerConfig: cfg}
 }
 

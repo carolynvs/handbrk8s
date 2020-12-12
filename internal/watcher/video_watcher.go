@@ -129,12 +129,14 @@ func (w *VideoWatcher) handleVideo(path string) {
 	// prevents attempts to process it a second time
 	claimPath := filepath.Join(w.ClaimDir, pathSuffix)
 	log.Printf("attempting to claim %s\n", path)
-	err = fs.MoveFile(path, claimPath)
+	err = os.Rename(path, claimPath)
 	if err != nil {
+		// TODO: add a retry with backoff
 		log.Println(errors.Wrapf(err, "unable to move %s to %s, skipping for now",
 			path, claimPath))
 		return
 	}
+	os.Chmod(claimPath, 0666)
 
 	transcodedPath := filepath.Join(w.TranscodedDir, pathSuffix)
 	transcodeJobName, err := w.createTranscodeJob(claimPath, transcodedPath)
@@ -164,7 +166,7 @@ func (w *VideoWatcher) cleanupFailedClaim(claimPath string) {
 
 	log.Printf("cleaning up failed claim: %s\n", claimPath)
 	failedPath := filepath.Join(w.FailedDir, pathSuffix)
-	err := fs.MoveFile(claimPath, failedPath)
+	err := os.Rename(claimPath, failedPath)
 	if err != nil {
 		log.Println(errors.Wrap(err, "unable to cleanup failed claim"))
 	}
