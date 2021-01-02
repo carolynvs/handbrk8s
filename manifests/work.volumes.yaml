@@ -8,8 +8,7 @@ spec:
     storage: 500Gi
   accessModes:
   - ReadWriteMany
-  nfs:
-    server: ponyshare
+  hostPath:
     path: "/ponyshare/handbrk8s"
 ---
 kind: PersistentVolumeClaim

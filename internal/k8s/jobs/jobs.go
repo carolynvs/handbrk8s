@@ -30,7 +30,12 @@ func Delete(name, namespace string) error {
 	}
 	jobclient := clusterClient.BatchV1().Jobs(namespace)
 
-	err = jobclient.Delete(context.TODO(), name, v1.DeleteOptions{})
+	// Wait for the associated pods to delete
+	foreground := v1.DeletePropagationForeground
+	opts := v1.DeleteOptions{
+		PropagationPolicy: &foreground,
+	}
+	err = jobclient.Delete(context.TODO(), name, opts)
 	if !apierrors.IsNotFound(err) {
 		return errors.Wrapf(err, "unable to delete %s/%s", namespace, name)
 	}
