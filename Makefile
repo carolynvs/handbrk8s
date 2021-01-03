@@ -6,7 +6,7 @@ GOBIN := $(GOPATH)/bin
 build: validate watcher jobchain uploader dashboard test
 
 watcher:
-	cd ./cmd/watcher; CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build
+	cd ./cmd/watcher; CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a
 	cd ./cmd/watcher; docker build -t carolynvs/handbrk8s-watcher .
 
 dashboard:

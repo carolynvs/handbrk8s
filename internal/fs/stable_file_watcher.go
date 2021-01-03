@@ -3,19 +3,21 @@ package fs
 import (
 	"log"
 	"os"
-	"path/filepath"
+	"sync"
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/radovskyb/watcher"
 )
 
 // StableFile watches for new files, waiting for the file to be completely
 // written before signaling an event.
 type StableFileWatcher struct {
-	watchDir     string
-	done         chan struct{}
-	unwatchFiles chan string
-	stableFiles  chan string
+	watchDir      string
+	dirWatcher    *watcher.Watcher
+	pollingPeriod time.Duration
+	done          chan struct{}
+	unstableFiles sync.Map
 
 	// StableThreshold is the duration that a file must not change
 	// before a signaling an event for the file.
@@ -36,11 +38,17 @@ type FileEvent struct {
 func NewStableFileWatcher(watchDir string, stableThreshold time.Duration) (*StableFileWatcher, error) {
 	w := &StableFileWatcher{
 		watchDir:        watchDir,
+		dirWatcher:      watcher.New(),
+		pollingPeriod:   100 * time.Millisecond,
 		done:            make(chan struct{}),
-		unwatchFiles:    make(chan string),
-		stableFiles:     make(chan string),
 		StableThreshold: stableThreshold,
 		Events:          make(chan FileEvent),
+	}
+
+	// Start watching for new files
+	err := w.dirWatcher.AddRecursive(w.watchDir)
+	if err != nil {
+		return nil, errors.Wrapf(err, "unable to watch directory %s", watchDir)
 	}
 
 	go w.start()
@@ -48,107 +56,97 @@ func NewStableFileWatcher(watchDir string, stableThreshold time.Duration) (*Stab
 	return w, nil
 }
 
-func (w *StableFileWatcher) readFiles() ([]string, error) {
-	var files []string
-
-	filepath.Walk(w.watchDir, func(path string, item os.FileInfo, err error) error {
-		if !item.IsDir() {
-			log.Printf("found video: %s\n", path)
-			files = append(files, path)
-		}
-		return nil
-	})
-
-	return files, nil
-}
-
 func (w *StableFileWatcher) start() {
-	watchedFiles := map[string]struct{}{}
+	for path, fi := range w.dirWatcher.WatchedFiles() {
+		if !fi.IsDir() {
+			go w.waitUntilFileIsStable(path)
+		}
+	}
 
-	for {
-		select {
-		case <-w.done:
-			close(w.unwatchFiles)
-			close(w.stableFiles)
-			close(w.Events)
-			return
-		case path := <-w.unwatchFiles:
-			delete(watchedFiles, path)
-		case path := <-w.stableFiles:
-			delete(watchedFiles, path)
-			w.Events <- FileEvent{path}
-		default:
-			files, err := w.readFiles()
-			if err != nil {
-				log.Println(err)
+	go func() {
+		for {
+			select {
+			case <-w.done:
+				close(w.Events)
 				return
-			}
-
-			for _, f := range files {
-				if _, ok := watchedFiles[f]; ok {
+			case e := <-w.dirWatcher.Event:
+				//log.Println(e.Op, e.Name())
+				if e.IsDir() {
 					continue
 				}
 
-				info, err := os.Stat(f)
-				if err != nil {
-					log.Println(errors.Wrapf(err, "could not stat %q, skipping", f))
+				if e.Op == watcher.Remove {
+					// Attempt to stop watching a deleted directory or file
+					w.unstableFiles.Delete(e.Path)
 					continue
 				}
 
-				if !info.IsDir() {
-					watchedFiles[f] = struct{}{}
-					go w.waitUntilFileIsStable(f)
-				}
+				go w.waitUntilFileIsStable(e.Path)
 			}
 		}
+	}()
 
-		time.Sleep(time.Second)
-	}
+	go func() {
+		err := w.dirWatcher.Start(w.pollingPeriod)
+		if err != nil {
+			panic(errors.Wrap(err, "unable to start watcher"))
+		}
+	}()
+
+	w.dirWatcher.Wait()
 }
 
 // Close all channels.
 func (w *StableFileWatcher) Close() {
+	w.dirWatcher.Close()
 	close(w.done)
 }
 
 // waitUntilFileIsStable waits until the file doesn't change for a set amount of
 // time. This prevents acting on a file that is still copying, being written.
 func (w *StableFileWatcher) waitUntilFileIsStable(path string) {
+	if _, ok := w.unstableFiles.LoadOrStore(path, struct{}{}); ok {
+		return
+	}
+
+	log.Printf("waiting for %s to stabilize\n", path)
+	fw := watcher.New()
+	defer fw.Close()
+	err := fw.Add(path)
+	if err != nil {
+		log.Println(errors.Wrapf(err, "unable to watch %s, skipping", path))
+		w.unstableFiles.Delete(path)
+		return
+	}
+	go fw.Start(w.pollingPeriod)
+
 	timer := time.NewTimer(w.StableThreshold)
 	defer timer.Stop()
 
-	var lastSize int64
 	for {
 		select {
 		case <-w.done:
+			w.unstableFiles.Delete(path)
 			return
+		case e := <-fw.Event:
+			if e.Op == watcher.Remove {
+				w.unstableFiles.Delete(path)
+				return
+			}
+
+			// Start the wait over again, the file was changed
+			if !timer.Stop() {
+				<-timer.C
+			}
+			timer.Reset(w.StableThreshold)
 		case <-timer.C:
 			// Make sure the file is still present
 			_, err := os.Stat(path)
 			if err != nil {
-				w.unwatchFiles <- path
 				log.Println(errors.Wrapf(err, "unable to stat %s, skipping", path))
 			} else {
-				w.stableFiles <- path
-			}
-			return
-		default:
-			info, err := os.Stat(path)
-			if err != nil {
-				w.unwatchFiles <- path
-				log.Println(errors.Wrapf(err, "unable to stat %s, skipping", path))
-			}
-
-			if lastSize != info.Size() {
-				lastSize = info.Size()
-				// Start the wait over again, the file was changed
-				if !timer.Stop() {
-					<-timer.C
-				}
-				timer.Reset(w.StableThreshold)
+				w.Events <- FileEvent{Path: path}
 			}
 		}
-
-		time.Sleep(time.Second)
 	}
 }

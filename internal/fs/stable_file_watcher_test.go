@@ -2,7 +2,9 @@ package fs
 
 import (
 	"fmt"
+	"io"
 	"io/ioutil"
+	"log"
 	"os"
 	"path/filepath"
 	"sync/atomic"
@@ -24,9 +26,23 @@ func (c *counter) value() int32 {
 }
 
 var testStableThreshold = 1 * time.Second
+var _ io.Writer = testLog{}
+
+type testLog struct {
+	*testing.T
+}
+
+func UseTestLog(t *testing.T) {
+	log.SetOutput(testLog{t})
+}
+
+func (t testLog) Write(p []byte) (n int, err error) {
+	t.Log(string(p))
+	return len(p), nil
+}
 
 func TestCopyFileWatcher_NewFile(t *testing.T) {
-	t.Parallel()
+	UseTestLog(t)
 
 	tmpDir, err := ioutil.TempDir("", t.Name())
 	if err != nil {
@@ -91,7 +107,7 @@ func TestCopyFileWatcher_NewFile(t *testing.T) {
 	}
 
 	// Give the file time to be considered stable
-	time.Sleep(w.StableThreshold)
+	time.Sleep(2 * w.StableThreshold)
 
 	// Stop listening for events
 	w.Close()
@@ -107,7 +123,7 @@ func TestCopyFileWatcher_NewFile(t *testing.T) {
 }
 
 func TestCopyFileWatcher_ExistingFile(t *testing.T) {
-	t.Parallel()
+	UseTestLog(t)
 
 	tmpDir, err := ioutil.TempDir("", t.Name())
 	if err != nil {
@@ -134,7 +150,7 @@ func TestCopyFileWatcher_ExistingFile(t *testing.T) {
 	done := make(chan bool)
 	go func() {
 		for e := range w.Events {
-			t.Log(e)
+			t.Log("Raised event:", e)
 			gotEvents.increment()
 		}
 
@@ -159,7 +175,7 @@ func TestCopyFileWatcher_ExistingFile(t *testing.T) {
 }
 
 func TestCopyFileWatcher_DeletedFile(t *testing.T) {
-	t.Parallel()
+	UseTestLog(t)
 
 	tmpDir, err := ioutil.TempDir("", t.Name())
 	if err != nil {
@@ -217,7 +233,7 @@ func TestCopyFileWatcher_DeletedFile(t *testing.T) {
 }
 
 func TestCopyFileWatcher_NestedFile(t *testing.T) {
-	t.Parallel()
+	UseTestLog(t)
 
 	tmpDir, err := ioutil.TempDir("", t.Name())
 	if err != nil {
@@ -287,7 +303,7 @@ func TestCopyFileWatcher_NestedFile(t *testing.T) {
 	}
 
 	// Give the file time to be considered stable
-	time.Sleep(w.StableThreshold)
+	time.Sleep(2 * w.StableThreshold)
 
 	// Stop listening for events
 	w.Close()
