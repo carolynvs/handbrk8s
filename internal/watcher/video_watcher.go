@@ -129,6 +129,14 @@ func (w *VideoWatcher) handleVideo(path string) {
 	// prevents attempts to process it a second time
 	claimPath := filepath.Join(w.ClaimDir, pathSuffix)
 	log.Printf("attempting to claim %s\n", path)
+	destDir := filepath.Dir(claimPath)
+	err = os.MkdirAll(destDir, 0755)
+	if err != nil {
+		// TODO: add a retry with backoff
+		log.Println(errors.Wrapf(err, "unable to create directory %s", destDir))
+		return
+	}
+
 	err = os.Rename(path, claimPath)
 	if err != nil {
 		// TODO: add a retry with backoff
@@ -166,7 +174,14 @@ func (w *VideoWatcher) cleanupFailedClaim(claimPath string) {
 
 	log.Printf("cleaning up failed claim: %s\n", claimPath)
 	failedPath := filepath.Join(w.FailedDir, pathSuffix)
-	err := os.Rename(claimPath, failedPath)
+	destDir := filepath.Dir(failedPath)
+	err := os.MkdirAll(destDir, 0755)
+	if err != nil {
+		// TODO: add a retry with backoff
+		log.Println(errors.Wrapf(err, "unable to create directory %s", destDir))
+		return
+	}
+	err = os.Rename(claimPath, failedPath)
 	if err != nil {
 		log.Println(errors.Wrap(err, "unable to cleanup failed claim"))
 	}
